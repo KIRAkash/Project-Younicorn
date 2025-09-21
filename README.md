@@ -1,6 +1,6 @@
-# Project Minerva - AI-Powered Startup Due Diligence Platform
+# Project Younicorn - AI-Powered Startup Due Diligence Platform
 
-Project Minerva is a sophisticated AI-powered platform that automates startup due diligence for investors using a multi-agent AI engine that transforms raw founder materials into an interactive, analytical dashboard.
+Project Younicorn is a sophisticated AI-powered platform that automates startup due diligence for investors using a multi-agent AI engine that transforms raw founder materials into an interactive, analytical dashboard.
 
 ## 🚀 Project Vision & Workflow
 
@@ -96,7 +96,7 @@ Each agent has a distinct role and is equipped with tools like web search:
 
 1. **Clone and Navigate**
    ```bash
-   cd a:\project\adk-samples\python\agents\Project-minerva
+   cd a:\project\adk-samples\python\agents\Project-Younicorn
    ```
 
 2. **Install Dependencies**
@@ -109,7 +109,7 @@ Each agent has a distinct role and is equipped with tools like web search:
    # Create .env file in app/ directory
    echo "GOOGLE_GENAI_USE_VERTEXAI=TRUE" >> app/.env
    echo "GOOGLE_CLOUD_PROJECT=your-project-id" >> app/.env
-   echo "BIGQUERY_DATASET=minerva_dataset" >> app/.env
+   echo "BIGQUERY_DATASET=Younicorn_dataset" >> app/.env
    ```
 
 4. **Run Development Servers**
@@ -122,7 +122,7 @@ Your platform will be running at `http://localhost:5173`.
 ## 📁 Project Structure
 
 ```
-Project-minerva/
+Project-Younicorn/
 ├── app/                    # Backend application
 │   ├── agents/            # Specialist AI agents
 │   ├── models/            # Data models and schemas
@@ -147,7 +147,7 @@ Project-minerva/
 
 ## 📊 Data Storage
 
-Project Minerva uses BigQuery for:
+Project Younicorn uses BigQuery for:
 - Startup submission data
 - Analysis results and metrics
 - User collaboration data
