@@ -166,9 +166,3 @@ Project Younicorn uses BigQuery for:
 
 Licensed under the Apache License, Version 2.0. See LICENSE file for details.
 
-## 🆘 Support
-
-For issues and questions:
-- Check the [troubleshooting guide](docs/troubleshooting.md)
-- Review [ADK Documentation](https://google.github.io/adk-docs/)
-- Open an issue on GitHub
