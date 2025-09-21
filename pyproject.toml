@@ -1,0 +1,117 @@
+[project]
+name = "project-minerva"
+version = "0.1.0"
+description = "AI-Powered Startup Due Diligence Platform"
+authors = [
+    {name = "Project Minerva Team", email = "team@projectminerva.ai"},
+]
+dependencies = [
+    "google-adk>=1.8.0",
+    "google-cloud-bigquery>=3.13.0",
+    "google-cloud-storage>=2.10.0",
+    "fastapi>=0.104.0",
+    "uvicorn>=0.24.0",
+    "pydantic>=2.5.0",
+    "python-multipart>=0.0.6",
+    "python-jose[cryptography]>=3.3.0",
+    "passlib[bcrypt]>=1.7.4",
+    "aiofiles>=23.2.1",
+    "pandas>=2.1.0",
+    "numpy>=1.24.0",
+    "python-dotenv>=1.0.0",
+]
+
+requires-python = ">=3.10,<3.13"
+
+[dependency-groups]
+dev = [
+    "pytest~=8.3.2",
+    "pytest-asyncio~=0.23.7",
+    "nest-asyncio>=1.6.0",
+    "agent-starter-pack>=0.14.1",
+    "httpx>=0.25.0",
+]
+
+[project.optional-dependencies]
+
+jupyter = [
+    "jupyter~=1.0.0",
+    "ipykernel>=6.25.0",
+]
+
+lint = [
+    "ruff>=0.4.6",
+    "mypy~=1.15.0",
+    "codespell~=2.2.0",
+    "types-pyyaml~=6.0.12.20240917",
+    "types-requests~=2.32.0.20240914",
+]
+
+test = [
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.12.0",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle
+    "F",   # pyflakes
+    "W",   # pycodestyle warnings
+    "I",   # isort
+    "C",  # flake8-comprehensions
+    "B",   # flake8-bugbear
+    "UP", # pyupgrade
+    "RUF", # ruff specific rules
+]
+ignore = ["E501", "C901"] # ignore line too long, too complex
+
+[tool.ruff.lint.isort]
+known-first-party = ["app", "frontend"]
+
+[tool.mypy]
+disallow_untyped_calls = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+no_implicit_optional = true
+check_untyped_defs = true
+disallow_subclassing_any = true
+warn_incomplete_stub = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_unreachable = true
+follow_imports = "silent"
+ignore_missing_imports = true
+explicit_package_bases = true
+disable_error_code = ["misc", "no-untyped-call", "no-any-return"]
+
+exclude = [".venv"]
+
+[tool.codespell]
+ignore-words-list = "rouge,minerva"
+skip = "./locust_env/*,uv.lock,.venv,./frontend,**/*.ipynb"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+pythonpath = "."
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["app","frontend"]
+
+# This configuration file is used by goo.gle/agent-starter-pack to power remote templating.
+[tool.agent-starter-pack]
+base_template = "adk_base"
+description = "AI-Powered Startup Due Diligence Platform with multi-agent analysis and interactive investor dashboard"
+example_question = "Analyze this startup's pitch deck and provide investment recommendations"
+
+[tool.agent-starter-pack.settings]
+deployment_targets = ["agent_engine", "cloud_run"]
+interactive_command = "dev"
