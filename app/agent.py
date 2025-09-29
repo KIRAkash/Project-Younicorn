@@ -31,32 +31,41 @@ logger = logging.getLogger(__name__)
 # --- Structured Output Models ---
 class StartupInfo(BaseModel):
     """Input model for startup submission data."""
-    company_info: Dict[str, Any] = Field(description="Company information including name, description, industry, etc.")
-    founders: List[Dict[str, Any]] = Field(description="Founder information including background and experience")
-    documents: List[Dict[str, Any]] = Field(default_factory=list, description="Supporting documents")
-    metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
+    class Config:
+        extra = "forbid"  # Disable additionalProperties
+    
+    company_info: str = Field(description="Company information as JSON string")
+    founders: str = Field(description="Founder information as JSON string")
+    documents: str = Field(default="[]", description="Supporting documents as JSON string")
+    metadata: str = Field(default="{}", description="Additional metadata as JSON string")
 
 
 class AgentAnalysis(BaseModel):
     """Output model for individual agent analysis."""
+    class Config:
+        extra = "forbid"  # Disable additionalProperties
+    
     agent_name: str = Field(description="Name of the analyzing agent")
     score: float = Field(description="Numerical score from 1-10")
     summary: str = Field(description="Executive summary of findings")
     detailed_analysis: str = Field(description="Comprehensive analysis")
     key_findings: List[str] = Field(description="Key insights and findings")
-    risks: List[str] = Field(default_factory=list, description="Identified risks")
-    opportunities: List[str] = Field(default_factory=list, description="Identified opportunities")
-    sources: List[str] = Field(default_factory=list, description="Sources used in analysis")
+    risks: List[str] = Field(default=[], description="Identified risks")
+    opportunities: List[str] = Field(default=[], description="Identified opportunities")
+    sources: List[str] = Field(default=[], description="Sources used in analysis")
 
 
 class FinalAnalysis(BaseModel):
     """Final synthesis of all agent analyses."""
+    class Config:
+        extra = "forbid"  # Disable additionalProperties
+    
     overall_score: float = Field(description="Overall investment score from 1-10")
     investment_recommendation: str = Field(description="INVEST, PASS, or WATCH recommendation")
     confidence_level: float = Field(description="Confidence in recommendation (0-1)")
     executive_summary: str = Field(description="High-level executive summary")
     investment_memo: str = Field(description="Detailed investment memo")
-    agent_analyses: Dict[str, AgentAnalysis] = Field(description="Individual agent analyses")
+    agent_summaries: str = Field(description="Summary of individual agent analyses as text")
     key_insights: List[str] = Field(description="Top insights across all analyses")
     risk_factors: List[str] = Field(description="Primary risk factors")
     growth_opportunities: List[str] = Field(description="Key growth opportunities")
@@ -184,18 +193,20 @@ team_agent = LlmAgent(
     model=config.specialist_model,
     name="team_agent",
     description="Analyzes founding team, leadership, and organizational structure",
+    output_key="team_analysis",  # Store result in session state
     instruction=prompts.team_agent_prompt + f"""
     
     Current date: {datetime.datetime.now().strftime("%Y-%m-%d")}
     
-    You will receive startup information in the session state under 'startup_info'.
-    Analyze the startup information focusing on the team aspects including:
+    Startup Information: {{startup_info}}
+    
+    Analyze the above startup information focusing on the team aspects including:
     - Founder backgrounds and experience
     - Team composition and completeness
     - Leadership track record
     - Advisory board strength
     
-    Use web search to validate founder backgrounds and experience claims.
+    Base your analysis on the provided startup information and your knowledge.
     Provide structured output following the AgentAnalysis schema with:
     - agent_name: "team_agent"
     - score: numerical score from 1-10
@@ -206,8 +217,10 @@ team_agent = LlmAgent(
     - opportunities: identified opportunities
     - sources: list of sources used
     """,
-    tools=[google_search],
-    output_schema=AgentAnalysis,
+    # tools=[google_search],  # Disabled: Google search tool not compatible with Gemini 1.x in parallel execution
+    # output_schema=AgentAnalysis,  # Temporarily disabled due to Gemini API additionalProperties issue
+    disallow_transfer_to_parent=True,
+    disallow_transfer_to_peers=True,
     after_agent_callback=collect_analysis_sources_callback
 )
 
@@ -215,22 +228,26 @@ market_agent = LlmAgent(
     model=config.specialist_model,
     name="market_agent",
     description="Analyzes market opportunity, size, and competitive landscape",
+    output_key="market_analysis",  # Store result in session state
     instruction=prompts.market_agent_prompt + f"""
     
     Current date: {datetime.datetime.now().strftime("%Y-%m-%d")}
     
-    You will receive startup information in the session state under 'startup_info'.
-    Analyze the market opportunity for the startup including:
+    Startup Information: {{startup_info}}
+    
+    Analyze the market opportunity for the above startup including:
     - Total Addressable Market (TAM) validation
     - Serviceable Addressable Market (SAM) analysis
     - Market trends and growth projections
     - Market timing and readiness
     
-    Use web search to gather current market data, trends, and sizing information.
+    Base your analysis on the provided startup information and your knowledge of market trends.
     Provide structured output following the AgentAnalysis schema with agent_name: "market_agent".
     """,
-    tools=[google_search],
-    output_schema=AgentAnalysis,
+    # tools=[google_search],  # Disabled: Google search tool not compatible with Gemini 1.x in parallel execution
+    # output_schema=AgentAnalysis,  # Temporarily disabled due to Gemini API additionalProperties issue
+    disallow_transfer_to_parent=True,
+    disallow_transfer_to_peers=True,
     after_agent_callback=collect_analysis_sources_callback
 )
 
@@ -238,23 +255,27 @@ product_agent = LlmAgent(
     model=config.specialist_model,
     name="product_agent",
     description="Evaluates product-market fit, traction, and growth metrics",
+    output_key="product_analysis",  # Store result in session state
     instruction=prompts.product_agent_prompt + f"""
     
     Current date: {datetime.datetime.now().strftime("%Y-%m-%d")}
     
-    You will receive startup information in the session state under 'startup_info'.
-    Analyze the product and traction metrics including:
+    Startup Information: {{startup_info}}
+    
+    Analyze the product and traction metrics for the above startup including:
     - Product-market fit assessment
     - Value proposition strength
     - Key performance metrics analysis
     - Customer acquisition and retention
     - Revenue model validation
     
-    Use web search to validate claims and gather competitive product information.
+    Base your analysis on the provided startup information and your knowledge.
     Provide structured output following the AgentAnalysis schema with agent_name: "product_agent".
     """,
-    tools=[google_search],
-    output_schema=AgentAnalysis,
+    # tools=[google_search],  # Disabled: Google search tool not compatible with Gemini 1.x in parallel execution
+    # output_schema=AgentAnalysis,  # Temporarily disabled due to Gemini API additionalProperties issue
+    disallow_transfer_to_parent=True,
+    disallow_transfer_to_peers=True,
     after_agent_callback=collect_analysis_sources_callback
 )
 
@@ -262,23 +283,27 @@ competition_agent = LlmAgent(
     model=config.specialist_model,
     name="competition_agent",
     description="Maps competitive landscape and assesses differentiation",
+    output_key="competition_analysis",  # Store result in session state
     instruction=prompts.competition_agent_prompt + f"""
     
     Current date: {datetime.datetime.now().strftime("%Y-%m-%d")}
     
-    You will receive startup information in the session state under 'startup_info'.
-    Analyze the competitive landscape including:
+    Startup Information: {{startup_info}}
+    
+    Analyze the competitive landscape for the above startup including:
     - Direct and indirect competitors identification
     - Competitive advantages and differentiation
     - Defensible moat analysis
     - Market positioning assessment
     - Competitive threats and risks
     
-    Use web search to identify current competitors and market positioning.
+    Base your analysis on the provided startup information and your knowledge of competitive landscapes.
     Provide structured output following the AgentAnalysis schema with agent_name: "competition_agent".
     """,
-    tools=[google_search],
-    output_schema=AgentAnalysis,
+    # tools=[google_search],  # Disabled: Google search tool not compatible with Gemini 1.x in parallel execution
+    # output_schema=AgentAnalysis,  # Temporarily disabled due to Gemini API additionalProperties issue
+    disallow_transfer_to_parent=True,
+    disallow_transfer_to_peers=True,
     after_agent_callback=collect_analysis_sources_callback
 )
 
@@ -290,8 +315,14 @@ synthesis_agent = LlmAgent(
     
     Current date: {datetime.datetime.now().strftime("%Y-%m-%d")}
     
-    You will receive startup information and individual agent analyses in the session state.
-    Synthesize all the individual agent analyses into a comprehensive final analysis including:
+    Startup Information: {{startup_info}}
+    
+    Team Analysis: {{team_analysis?}}
+    Market Analysis: {{market_analysis?}}
+    Product Analysis: {{product_analysis?}}
+    Competition Analysis: {{competition_analysis?}}
+    
+    Synthesize all the individual agent analyses above into a comprehensive final analysis including:
     - Overall investment score (1-10) based on individual agent scores
     - Clear investment recommendation (INVEST, PASS, or WATCH)
     - Confidence level in the recommendation (0-1)
@@ -304,7 +335,7 @@ synthesis_agent = LlmAgent(
     
     Provide structured output following the FinalAnalysis schema.
     """,
-    output_schema=FinalAnalysis,
+    # output_schema=FinalAnalysis,  # Temporarily disabled due to Gemini API additionalProperties issue
     disallow_transfer_to_parent=True,
     disallow_transfer_to_peers=True,
     after_agent_callback=store_agent_analysis_callback

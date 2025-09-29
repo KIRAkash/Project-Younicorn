@@ -6,7 +6,7 @@ dev:
 	make dev-backend & make dev-frontend
 
 dev-backend:
-	uv run uvicorn integrated_server:app --reload --port 8001
+	uv run python run_integrated_server.py
 
 dev-frontend:
 	npm --prefix frontend run dev

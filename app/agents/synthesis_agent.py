@@ -27,6 +27,9 @@ from .callbacks import (
 class InvestmentRecommendation(BaseModel):
     """Investment recommendation model."""
     
+    class Config:
+        extra = "forbid"
+    
     recommendation: str = Field(..., description="Investment recommendation: Strong Buy, Buy, Hold, Pass")
     confidence_level: float = Field(..., ge=0, le=1, description="Confidence in recommendation (0-1)")
     rationale: str = Field(..., description="Detailed rationale for the recommendation")
@@ -34,48 +37,57 @@ class InvestmentRecommendation(BaseModel):
     # Investment terms suggestions
     suggested_valuation_range: str = Field(..., description="Suggested valuation range")
     investment_size_recommendation: str = Field(..., description="Recommended investment size")
-    key_terms: list[str] = Field(..., description="Key investment terms to negotiate")
+    key_terms: list[str] = Field(default=[], description="Key investment terms to negotiate")
     
     # Conditions and requirements
-    investment_conditions: list[str] = Field(default_factory=list, description="Conditions for investment")
-    due_diligence_requirements: list[str] = Field(default_factory=list, description="Additional due diligence needed")
+    investment_conditions: list[str] = Field(default=[], description="Conditions for investment")
+    due_diligence_requirements: list[str] = Field(default=[], description="Additional due diligence needed")
 
 
 class RiskAssessment(BaseModel):
     """Risk assessment model."""
     
+    class Config:
+        extra = "forbid"
+    
     overall_risk_level: str = Field(..., description="Overall risk level: Low, Medium, High, Critical")
     
     # Risk categories
-    team_risks: list[str] = Field(default_factory=list, description="Team-related risks")
-    market_risks: list[str] = Field(default_factory=list, description="Market-related risks")
-    product_risks: list[str] = Field(default_factory=list, description="Product-related risks")
-    competitive_risks: list[str] = Field(default_factory=list, description="Competitive risks")
-    execution_risks: list[str] = Field(default_factory=list, description="Execution risks")
+    team_risks: list[str] = Field(default=[], description="Team-related risks")
+    market_risks: list[str] = Field(default=[], description="Market-related risks")
+    product_risks: list[str] = Field(default=[], description="Product-related risks")
+    competitive_risks: list[str] = Field(default=[], description="Competitive risks")
+    execution_risks: list[str] = Field(default=[], description="Execution risks")
     
     # Risk mitigation
-    mitigation_strategies: list[str] = Field(..., description="Risk mitigation strategies")
-    monitoring_requirements: list[str] = Field(..., description="Key metrics to monitor")
+    mitigation_strategies: list[str] = Field(default=[], description="Risk mitigation strategies")
+    monitoring_requirements: list[str] = Field(default=[], description="Key metrics to monitor")
 
 
 class OpportunityAssessment(BaseModel):
     """Opportunity assessment model."""
     
+    class Config:
+        extra = "forbid"
+    
     overall_opportunity_level: str = Field(..., description="Overall opportunity level: Low, Medium, High, Exceptional")
     
     # Opportunity categories
-    market_opportunities: list[str] = Field(..., description="Market opportunities")
-    product_opportunities: list[str] = Field(..., description="Product development opportunities")
-    expansion_opportunities: list[str] = Field(..., description="Market expansion opportunities")
-    strategic_opportunities: list[str] = Field(..., description="Strategic partnership opportunities")
+    market_opportunities: list[str] = Field(default=[], description="Market opportunities")
+    product_opportunities: list[str] = Field(default=[], description="Product development opportunities")
+    expansion_opportunities: list[str] = Field(default=[], description="Market expansion opportunities")
+    strategic_opportunities: list[str] = Field(default=[], description="Strategic partnership opportunities")
     
     # Value creation potential
-    value_creation_drivers: list[str] = Field(..., description="Key value creation drivers")
-    exit_scenarios: list[str] = Field(..., description="Potential exit scenarios")
+    value_creation_drivers: list[str] = Field(default=[], description="Key value creation drivers")
+    exit_scenarios: list[str] = Field(default=[], description="Potential exit scenarios")
 
 
 class SynthesisResult(BaseModel):
     """Model for synthesis agent results."""
+    
+    class Config:
+        extra = "forbid"
     
     # Overall scoring
     overall_investability_score: float = Field(..., ge=1, le=10, description="Overall investability score (1-10)")
@@ -92,7 +104,7 @@ class SynthesisResult(BaseModel):
     
     # Detailed analysis
     investment_memo: str = Field(..., description="Complete investment memorandum")
-    key_insights: list[str] = Field(..., description="Key insights from the analysis")
+    key_insights: list[str] = Field(default=[], description="Key insights from the analysis")
     
     # Investment recommendation
     investment_recommendation: InvestmentRecommendation = Field(..., description="Investment recommendation")
@@ -102,11 +114,11 @@ class SynthesisResult(BaseModel):
     opportunity_assessment: OpportunityAssessment = Field(..., description="Opportunity assessment")
     
     # Comparative analysis
-    comparable_companies: list[str] = Field(default_factory=list, description="Comparable companies for benchmarking")
+    comparable_companies: list[str] = Field(default=[], description="Comparable companies for benchmarking")
     competitive_positioning: str = Field(..., description="Competitive positioning summary")
     
     # Next steps
-    next_steps: list[str] = Field(..., description="Recommended next steps")
+    next_steps: list[str] = Field(default=[], description="Recommended next steps")
     timeline: str = Field(..., description="Suggested timeline for decision making")
     
     # Quality metrics
@@ -133,11 +145,17 @@ synthesis_agent = LlmAgent(
       * Competition agent's competitive landscape analysis
     
     **2. CALCULATE OVERALL INVESTABILITY SCORE**
+    - Extract individual scores from specialist agent analyses:
+      * team_analysis.overall_score for team_score
+      * market_analysis.overall_score for market_score  
+      * product_analysis.overall_score for product_score
+      * competition_analysis.overall_score for competition_score
     - Weight the component scores appropriately:
       * Team: 25% (execution capability is critical)
       * Market: 25% (market opportunity size and timing)
       * Product: 30% (product-market fit and traction)
       * Competition: 20% (competitive position and defensibility)
+    - Calculate: overall_investability_score = (team_score * 0.25) + (market_score * 0.25) + (product_score * 0.30) + (competition_score * 0.20)
     - Provide clear rationale for the overall score
     
     **3. DEVELOP INVESTMENT THESIS**
@@ -191,7 +209,7 @@ synthesis_agent = LlmAgent(
     - Ensure all claims are supported by evidence from specialist analyses
     - Maintain professional tone appropriate for institutional investors
     """,
-    output_schema=SynthesisResult,  # Changed to use output_schema as per ADK docs
+    output_schema=SynthesisResult,
     output_key="synthesis_result",
     after_agent_callback=[
         track_agent_execution_callback,

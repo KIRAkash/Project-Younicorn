@@ -29,6 +29,9 @@ from .callbacks import (
 class Competitor(BaseModel):
     """Individual competitor analysis model."""
     
+    class Config:
+        extra = "forbid"
+    
     name: str = Field(..., description="Competitor name")
     category: str = Field(..., description="Direct, indirect, or substitute competitor")
     description: str = Field(..., description="Brief description of the competitor")
@@ -45,8 +48,8 @@ class Competitor(BaseModel):
     customer_count: Optional[int] = Field(None, description="Estimated customer count")
     
     # Competitive analysis
-    strengths: list[str] = Field(..., description="Key competitive strengths")
-    weaknesses: list[str] = Field(..., description="Key competitive weaknesses")
+    strengths: list[str] = Field(default=[], description="Key competitive strengths")
+    weaknesses: list[str] = Field(default=[], description="Key competitive weaknesses")
     differentiation: str = Field(..., description="How they differentiate from the startup")
     threat_level: str = Field(..., description="Threat level: Low, Medium, High, Critical")
 
@@ -54,15 +57,21 @@ class Competitor(BaseModel):
 class CompetitiveAdvantage(BaseModel):
     """Competitive advantage analysis model."""
     
+    class Config:
+        extra = "forbid"
+    
     advantage_type: str = Field(..., description="Type of competitive advantage")
     description: str = Field(..., description="Detailed description of the advantage")
     sustainability: str = Field(..., description="How sustainable is this advantage")
     defensibility: float = Field(..., ge=1, le=10, description="Defensibility score (1-10)")
-    evidence: list[str] = Field(..., description="Evidence supporting this advantage")
+    evidence: list[str] = Field(default=[], description="Evidence supporting this advantage")
 
 
 class CompetitionAnalysis(BaseModel):
     """Model for competition analysis results."""
+    
+    class Config:
+        extra = "forbid"
     
     overall_score: float = Field(..., ge=1, le=10, description="Overall competitive position score (1-10)")
     
@@ -73,12 +82,12 @@ class CompetitionAnalysis(BaseModel):
     market_positioning_score: float = Field(..., ge=1, le=10, description="Market positioning score")
     
     # Competitive landscape
-    direct_competitors: list[Competitor] = Field(..., description="Direct competitors analysis")
-    indirect_competitors: list[Competitor] = Field(..., description="Indirect competitors analysis")
-    substitute_threats: list[Competitor] = Field(..., description="Substitute threats analysis")
+    direct_competitors: list[Competitor] = Field(default=[], description="Direct competitors analysis")
+    indirect_competitors: list[Competitor] = Field(default=[], description="Indirect competitors analysis")
+    substitute_threats: list[Competitor] = Field(default=[], description="Substitute threats analysis")
     
     # Competitive advantages
-    competitive_advantages: list[CompetitiveAdvantage] = Field(..., description="Identified competitive advantages")
+    competitive_advantages: list[CompetitiveAdvantage] = Field(default=[], description="Identified competitive advantages")
     
     # Analysis sections
     executive_summary: str = Field(..., description="Executive summary of competition analysis")
@@ -89,17 +98,17 @@ class CompetitionAnalysis(BaseModel):
     competitive_threats: str = Field(..., description="Key competitive threats and risks")
     
     # Key findings
-    key_differentiators: list[str] = Field(..., description="Key differentiating factors")
-    competitive_risks: list[str] = Field(..., description="Major competitive risks")
-    barriers_to_entry: list[str] = Field(..., description="Barriers to entry for new competitors")
+    key_differentiators: list[str] = Field(default=[], description="Key differentiating factors")
+    competitive_risks: list[str] = Field(default=[], description="Major competitive risks")
+    barriers_to_entry: list[str] = Field(default=[], description="Barriers to entry for new competitors")
     switching_costs: str = Field(..., description="Customer switching costs analysis")
     
     # Strategic recommendations
     competitive_strategy: str = Field(..., description="Recommended competitive strategy")
-    positioning_recommendations: list[str] = Field(..., description="Market positioning recommendations")
+    positioning_recommendations: list[str] = Field(default=[], description="Market positioning recommendations")
     
     # Supporting evidence
-    supporting_evidence: list[str] = Field(..., description="Supporting evidence and sources")
+    supporting_evidence: list[str] = Field(default=[], description="Supporting evidence and sources")
     confidence_level: float = Field(..., ge=0, le=1, description="Confidence in analysis (0-1)")
 
 
@@ -184,7 +193,7 @@ competition_agent = LlmAgent(
     - Provide actionable strategic recommendations
     - Cite all sources used in your research
     """,
-    tools=[google_search],
+    # tools=[google_search],  # Disabled for parallel execution compatibility
     output_schema=CompetitionAnalysis,  # Changed to use output_schema as per ADK docs
     output_key="competition_analysis",
     after_agent_callback=[

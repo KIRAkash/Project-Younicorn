@@ -2,10 +2,12 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
+import { motion } from 'framer-motion'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { AuroraBackground } from '@/components/ui/aurora-background'
 import { useAuth } from '@/hooks/use-auth'
 import { useToast } from '@/hooks/use-toast'
 import { LoginForm } from '@/types'
@@ -53,112 +55,138 @@ export function LoginPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="text-center">
-        <h2 className="text-2xl font-bold tracking-tight">Sign in to your account</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Welcome back! Please enter your credentials to continue.
-        </p>
-      </div>
-
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="email">Email address</Label>
-          <Input
-            id="email"
-            type="email"
-            placeholder="Enter your email"
-            {...register('email', {
-              required: 'Email is required',
-              pattern: {
-                value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                message: 'Please enter a valid email address',
-              },
-            })}
-            className={cn(errors.email && 'border-destructive')}
+    <AuroraBackground>
+      <motion.div
+        initial={{ opacity: 0.0, y: 40 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{
+          delay: 0.3,
+          duration: 0.8,
+          ease: "easeInOut",
+        }}
+        className="relative flex flex-col gap-4 items-center justify-center px-4 w-full max-w-md"
+      >
+        {/* Younicorns Brand */}
+        <div className="text-center mb-6 mt-8">
+          <img 
+            src="/logo.png" 
+            alt="Younicorns Logo" 
+            className="w-48 md:w-64 h-auto mx-auto mb-4"
           />
-          {errors.email && (
-            <p className="text-sm text-destructive">{errors.email.message}</p>
-          )}
+          <p className="font-light text-lg md:text-xl text-muted-foreground">
+            Where unicorns are born
+          </p>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
-          <div className="relative">
-            <Input
-              id="password"
-              type={showPassword ? 'text' : 'password'}
-              placeholder="Enter your password"
-              {...register('password', {
-                required: 'Password is required',
-                minLength: {
-                  value: 8,
-                  message: 'Password must be at least 8 characters',
-                },
-              })}
-              className={cn(errors.password && 'border-destructive', 'pr-10')}
-            />
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-              onClick={() => setShowPassword(!showPassword)}
-            >
-              {showPassword ? (
-                <EyeOff className="h-4 w-4 text-muted-foreground" />
-              ) : (
-                <Eye className="h-4 w-4 text-muted-foreground" />
+        {/* Login Form Card */}
+        <div className="w-full bg-white/90 dark:bg-black/90 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-white/20">
+          <div className="text-center mb-6">
+            <h2 className="text-2xl font-bold tracking-tight">Sign in to your account</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Welcome back! Please enter your credentials to continue.
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email address</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="Enter your email"
+                {...register('email', {
+                  required: 'Email is required',
+                  pattern: {
+                    value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                    message: 'Please enter a valid email address',
+                  },
+                })}
+                className={cn(errors.email && 'border-destructive')}
+              />
+              {errors.email && (
+                <p className="text-sm text-destructive">{errors.email.message}</p>
               )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Enter your password"
+                  {...register('password', {
+                    required: 'Password is required',
+                    minLength: {
+                      value: 8,
+                      message: 'Password must be at least 8 characters',
+                    },
+                  })}
+                  className={cn(errors.password && 'border-destructive', 'pr-10')}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </Button>
+              </div>
+              {errors.password && (
+                <p className="text-sm text-destructive">{errors.password.message}</p>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <input
+                  id="remember"
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                />
+                <Label htmlFor="remember" className="text-sm">
+                  Remember me
+                </Label>
+              </div>
+              <Link
+                to="/auth/forgot-password"
+                className="text-sm text-primary hover:underline"
+              >
+                Forgot password?
+              </Link>
+            </div>
+
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Sign in
             </Button>
+          </form>
+
+          <div className="text-center mt-6">
+            <p className="text-sm text-muted-foreground">
+              Don't have an account?{' '}
+              <Link to="/auth/register" className="text-primary hover:underline font-medium">
+                Sign up
+              </Link>
+            </p>
           </div>
-          {errors.password && (
-            <p className="text-sm text-destructive">{errors.password.message}</p>
-          )}
-        </div>
 
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <input
-              id="remember"
-              type="checkbox"
-              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-            />
-            <Label htmlFor="remember" className="text-sm">
-              Remember me
-            </Label>
+          {/* Demo credentials */}
+          <div className="mt-6 p-4 bg-muted/50 rounded-lg">
+            <h3 className="text-sm font-medium mb-2">Demo Credentials</h3>
+            <div className="space-y-1 text-xs text-muted-foreground">
+              <p><strong>Investor:</strong> investor@demo.com / password123</p>
+              <p><strong>Founder:</strong> founder@demo.com / password123</p>
+            </div>
           </div>
-          <Link
-            to="/auth/forgot-password"
-            className="text-sm text-primary hover:underline"
-          >
-            Forgot password?
-          </Link>
         </div>
-
-        <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Sign in
-        </Button>
-      </form>
-
-      <div className="text-center">
-        <p className="text-sm text-muted-foreground">
-          Don't have an account?{' '}
-          <Link to="/auth/register" className="text-primary hover:underline font-medium">
-            Sign up
-          </Link>
-        </p>
-      </div>
-
-      {/* Demo credentials */}
-      <div className="mt-8 p-4 bg-muted rounded-lg">
-        <h3 className="text-sm font-medium mb-2">Demo Credentials</h3>
-        <div className="space-y-1 text-xs text-muted-foreground">
-          <p><strong>Investor:</strong> investor@demo.com / password123</p>
-          <p><strong>Founder:</strong> founder@demo.com / password123</p>
-        </div>
-      </div>
-    </div>
+      </motion.div>
+    </AuroraBackground>
   )
 }

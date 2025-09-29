@@ -28,6 +28,9 @@ from .callbacks import (
 class MarketSizing(BaseModel):
     """Market sizing analysis model."""
     
+    class Config:
+        extra = "forbid"
+    
     tam_usd: float = Field(..., description="Total Addressable Market in USD")
     sam_usd: float = Field(..., description="Serviceable Addressable Market in USD")
     som_usd: float = Field(..., description="Serviceable Obtainable Market in USD")
@@ -42,6 +45,9 @@ class MarketSizing(BaseModel):
 
 class MarketAnalysis(BaseModel):
     """Model for market analysis results."""
+    
+    class Config:
+        extra = "forbid"
     
     overall_score: float = Field(..., ge=1, le=10, description="Overall market score (1-10)")
     
@@ -62,13 +68,13 @@ class MarketAnalysis(BaseModel):
     regulatory_environment: str = Field(..., description="Regulatory environment assessment")
     
     # Key findings
-    opportunities: list[str] = Field(..., description="Key market opportunities")
-    challenges: list[str] = Field(..., description="Market challenges and barriers")
-    trends_supporting: list[str] = Field(..., description="Trends supporting the business")
-    trends_opposing: list[str] = Field(default_factory=list, description="Trends that could oppose the business")
+    opportunities: list[str] = Field(default=[], description="Key market opportunities")
+    challenges: list[str] = Field(default=[], description="Market challenges and barriers")
+    trends_supporting: list[str] = Field(default=[], description="Trends supporting the business")
+    trends_opposing: list[str] = Field(default=[], description="Trends that could oppose the business")
     
     # Supporting evidence
-    supporting_evidence: list[str] = Field(..., description="Supporting evidence and data sources")
+    supporting_evidence: list[str] = Field(default=[], description="Supporting evidence and data sources")
     confidence_level: float = Field(..., ge=0, le=1, description="Confidence in analysis (0-1)")
 
 
@@ -137,7 +143,7 @@ market_agent = LlmAgent(
     - Highlight both opportunities and challenges
     - Cite all sources used in your research
     """,
-    tools=[google_search],
+    # tools=[google_search],  # Disabled for parallel execution compatibility
     output_schema=MarketAnalysis,  # Changed to use output_schema as per ADK docs
     output_key="market_analysis",
     after_agent_callback=[

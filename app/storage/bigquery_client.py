@@ -124,6 +124,13 @@ class BigQueryClient:
             bigquery.SchemaField("confidence_level", "FLOAT", mode="NULLABLE"),
             bigquery.SchemaField("executive_summary", "STRING", mode="NULLABLE"),
             bigquery.SchemaField("investment_memo", "STRING", mode="NULLABLE"),
+            # Individual agent analysis columns
+            bigquery.SchemaField("team_analysis", "JSON", mode="NULLABLE"),
+            bigquery.SchemaField("market_analysis", "JSON", mode="NULLABLE"),
+            bigquery.SchemaField("product_analysis", "JSON", mode="NULLABLE"),
+            bigquery.SchemaField("competition_analysis", "JSON", mode="NULLABLE"),
+            bigquery.SchemaField("synthesis_analysis", "JSON", mode="NULLABLE"),
+            # Legacy field for backward compatibility
             bigquery.SchemaField("agent_analyses", "JSON", mode="NULLABLE"),
             bigquery.SchemaField("risks_opportunities", "JSON", mode="NULLABLE"),
             bigquery.SchemaField("key_insights", "JSON", mode="NULLABLE"),

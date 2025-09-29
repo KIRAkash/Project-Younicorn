@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Test script to verify Google Cloud authentication with service account."""
+"""Test script to verify Google Cloud authentication and ADK dependencies."""
 
 import os
 import sys
@@ -46,8 +46,18 @@ try:
     print(f"📋 Authenticated project: {project}")
     print(f"🔑 Credentials type: {type(credentials).__name__}")
     
+    # Test if credentials are valid
+    if hasattr(credentials, 'valid') and not credentials.valid:
+        if hasattr(credentials, 'refresh'):
+            print("🔄 Refreshing credentials...")
+            import google.auth.transport.requests
+            request = google.auth.transport.requests.Request()
+            credentials.refresh(request)
+            print("✅ Credentials refreshed")
+    
 except Exception as e:
     print(f"❌ Authentication failed: {e}")
+    print("   Make sure to run: gcloud auth application-default login")
     sys.exit(1)
 
 # Test BigQuery access
@@ -90,7 +100,30 @@ except Exception as e:
     print(f"❌ Vertex AI access failed: {e}")
     print("   Make sure the service account has Vertex AI permissions")
 
-print("\n🎉 Authentication test completed!")
+# Test ADK imports
+try:
+    print("\n🤖 Testing ADK imports...")
+    from google.adk.runners import InMemoryRunner
+    from google.adk.agents import SequentialAgent
+    print("✅ ADK imports successful")
+    print(f"   InMemoryRunner: {InMemoryRunner}")
+    print(f"   SequentialAgent: {SequentialAgent}")
+except Exception as e:
+    print(f"❌ ADK imports failed: {e}")
+
+# Test agent imports
+try:
+    print("\n🧠 Testing agent imports...")
+    from app.agent import minerva_analysis_agent, StartupInfo
+    print("✅ Agent imports successful")
+    print(f"   Main agent type: {type(minerva_analysis_agent).__name__}")
+    print(f"   StartupInfo model: {StartupInfo}")
+except Exception as e:
+    print(f"❌ Agent imports failed: {e}")
+    print("   This may cause the server to fall back to simulation mode")
+
+print("\n🎉 Authentication and dependency test completed!")
 print("\nNext steps:")
 print("1. Run: make dev-backend")
-print("2. The server should now use the service account for all Google Cloud services")
+print("2. Run: uv run python test_integration.py")
+print("3. The server should now use real AI agents with proper authentication")

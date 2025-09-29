@@ -24,6 +24,117 @@ import { Separator } from '@/components/ui/separator'
 import { analysisApi, startupsApi } from '@/services/api'
 import { getScoreColor, getScoreLabel, getInvestmentRecommendationColor, formatDate } from '@/utils'
 
+// Component to render analysis data with markdown support
+function AnalysisRenderer({ data, title, icon: Icon, score }: { 
+  data: any, 
+  title: string, 
+  icon: any, 
+  score?: number 
+}) {
+  if (!data) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Icon className="w-5 h-5" />
+            {title}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground">No analysis data available</p>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  const renderValue = (_key: string, value: any): React.ReactNode => {
+    if (value === null || value === undefined) return null
+    
+    if (typeof value === 'string') {
+      // Check if it looks like markdown or has line breaks
+      if (value.includes('\n') || value.includes('**') || value.includes('##') || value.includes('*')) {
+        return (
+          <div className="prose prose-sm max-w-none">
+            <ReactMarkdown>{value}</ReactMarkdown>
+          </div>
+        )
+      }
+      return <p className="text-sm">{value}</p>
+    }
+    
+    if (typeof value === 'number') {
+      return <span className="font-mono text-sm">{value}</span>
+    }
+    
+    if (typeof value === 'boolean') {
+      return <Badge variant={value ? 'default' : 'secondary'}>{value ? 'Yes' : 'No'}</Badge>
+    }
+    
+    if (Array.isArray(value)) {
+      if (value.length === 0) return <p className="text-muted-foreground text-sm">None</p>
+      return (
+        <ul className="space-y-1">
+          {value.map((item, index) => (
+            <li key={index} className="flex items-start gap-2">
+              <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0" />
+              <span className="text-sm">{typeof item === 'string' ? item : JSON.stringify(item)}</span>
+            </li>
+          ))}
+        </ul>
+      )
+    }
+    
+    if (typeof value === 'object') {
+      return (
+        <div className="space-y-2">
+          {Object.entries(value).map(([subKey, subValue]) => (
+            <div key={subKey} className="border-l-2 border-muted pl-4">
+              <h5 className="font-medium text-sm capitalize mb-1">{subKey.replace(/_/g, ' ')}</h5>
+              {renderValue(subKey, subValue)}
+            </div>
+          ))}
+        </div>
+      )
+    }
+    
+    return <pre className="text-xs bg-muted p-2 rounded overflow-auto">{JSON.stringify(value, null, 2)}</pre>
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Icon className="w-5 h-5" />
+              {title}
+            </CardTitle>
+            <CardDescription>AI-generated analysis</CardDescription>
+          </div>
+          {score !== undefined && (
+            <Badge className={getScoreColor(score)}>
+              {score.toFixed(1)}/10
+            </Badge>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {Object.entries(data).map(([key, value]) => {
+          if (value === null || value === undefined) return null
+          
+          return (
+            <div key={key}>
+              <h4 className="font-medium mb-2 capitalize">{key.replace(/_/g, ' ')}</h4>
+              {renderValue(key, value)}
+              <Separator className="mt-4" />
+            </div>
+          )
+        })}
+      </CardContent>
+    </Card>
+  )
+}
+
 export function AnalysisPage() {
   const { id } = useParams<{ id: string }>()
 
@@ -35,11 +146,52 @@ export function AnalysisPage() {
 
   const { data: analyses, isLoading } = useQuery({
     queryKey: ['analyses', id],
-    queryFn: () => analysisApi.list({ startup_id: id }),
+    queryFn: () => {
+      console.log('Calling analysisApi.list with startup_id:', id)
+      return analysisApi.list({ startup_id: id })
+    },
     enabled: !!id,
   })
 
   const latestAnalysis = analyses?.data?.[0]
+  
+  // Debug logging
+  console.log('Analysis API Response:', analyses)
+  console.log('Latest Analysis:', latestAnalysis)
+  console.log('Startup ID:', id)
+
+  // Parse individual agent analysis columns from BigQuery schema
+  const parseAnalysis = (data: any) => {
+    if (!data) return null
+    if (typeof data === 'string') {
+      try {
+        return JSON.parse(data)
+      } catch {
+        return null
+      }
+    }
+    return data
+  }
+
+  const teamAnalysis = parseAnalysis(latestAnalysis?.team_analysis)
+  const marketAnalysis = parseAnalysis(latestAnalysis?.market_analysis)
+  const productAnalysis = parseAnalysis(latestAnalysis?.product_analysis)
+  const competitionAnalysis = parseAnalysis(latestAnalysis?.competition_analysis)
+  const synthesisAnalysis = parseAnalysis(latestAnalysis?.synthesis_analysis)
+
+  // Note: Now using individual analysis columns from BigQuery schema
+
+  // Create investability score object for the UI using BigQuery fields
+  const investabilityScore = latestAnalysis?.investability_score || {
+    overall_score: latestAnalysis?.overall_score || 0,
+    team_score: latestAnalysis?.team_score || 0,
+    market_score: latestAnalysis?.market_score || 0, 
+    product_score: latestAnalysis?.product_score || 0,
+    competition_score: latestAnalysis?.competition_score || 0,
+    investment_recommendation: latestAnalysis?.investment_recommendation || 'PENDING',
+    confidence_level: latestAnalysis?.confidence_level || 0.5,
+    score_weights: {}
+  }
 
   if (isLoading) {
     return (
@@ -76,8 +228,6 @@ export function AnalysisPage() {
       </div>
     )
   }
-
-  const investabilityScore = latestAnalysis.investability_score
 
   return (
     <div className="p-6 space-y-6">
@@ -198,59 +348,64 @@ export function AnalysisPage() {
         </div>
       )}
 
-      <Tabs defaultValue="summary" className="space-y-6">
+      <Tabs defaultValue="team" className="space-y-6">
         <TabsList>
-          <TabsTrigger value="summary">Executive Summary</TabsTrigger>
-          <TabsTrigger value="detailed">Detailed Analysis</TabsTrigger>
-          <TabsTrigger value="risks">Risks & Opportunities</TabsTrigger>
-          <TabsTrigger value="sources">Sources & Traceability</TabsTrigger>
-          <TabsTrigger value="chat">AI Co-pilot</TabsTrigger>
+          <TabsTrigger value="team">Team Analysis</TabsTrigger>
+          <TabsTrigger value="market">Market Analysis</TabsTrigger>
+          <TabsTrigger value="product">Product Analysis</TabsTrigger>
+          <TabsTrigger value="competition">Competition Analysis</TabsTrigger>
+          <TabsTrigger value="synthesis">Final Verdict</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="summary" className="space-y-6">
-          {/* Executive Summary */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Executive Summary</CardTitle>
-              <CardDescription>
-                AI-generated investment overview and recommendation
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {latestAnalysis.executive_summary ? (
-                <ReactMarkdown className="prose prose-sm max-w-none">
-                  {latestAnalysis.executive_summary}
-                </ReactMarkdown>
-              ) : (
-                <p className="text-muted-foreground">Executive summary not available</p>
-              )}
-            </CardContent>
-          </Card>
+        <TabsContent value="team" className="space-y-6">
+          <AnalysisRenderer 
+            data={teamAnalysis} 
+            title="Team Analysis" 
+            icon={Users} 
+            score={latestAnalysis?.team_score}
+          />
+        </TabsContent>
 
-          {/* Key Insights */}
-          {latestAnalysis.key_insights?.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Key Insights</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-3">
-                  {latestAnalysis.key_insights.map((insight, index) => (
-                    <li key={index} className="flex items-start gap-3">
-                      <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0" />
-                      <span>{insight}</span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-          )}
+        <TabsContent value="market" className="space-y-6">
+          <AnalysisRenderer 
+            data={marketAnalysis} 
+            title="Market Analysis" 
+            icon={TrendingUp} 
+            score={latestAnalysis?.market_score}
+          />
+        </TabsContent>
 
-          {/* Investment Recommendation */}
+        <TabsContent value="product" className="space-y-6">
+          <AnalysisRenderer 
+            data={productAnalysis} 
+            title="Product Analysis" 
+            icon={Target} 
+            score={latestAnalysis?.product_score}
+          />
+        </TabsContent>
+
+        <TabsContent value="competition" className="space-y-6">
+          <AnalysisRenderer 
+            data={competitionAnalysis} 
+            title="Competition Analysis" 
+            icon={Shield} 
+            score={latestAnalysis?.competition_score}
+          />
+        </TabsContent>
+
+        <TabsContent value="synthesis" className="space-y-6">
+          <AnalysisRenderer 
+            data={synthesisAnalysis} 
+            title="Final Verdict" 
+            icon={BarChart3} 
+            score={latestAnalysis?.overall_score}
+          />
+
+          {/* Investment Summary Card */}
           {investabilityScore && (
             <Card>
               <CardHeader>
-                <CardTitle>Investment Recommendation</CardTitle>
+                <CardTitle>Investment Summary</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-4 mb-4">
@@ -260,246 +415,22 @@ export function AnalysisPage() {
                     {investabilityScore.investment_recommendation}
                   </Badge>
                   <div className="text-sm text-muted-foreground">
+                    Overall Score: <span className="font-medium">{investabilityScore.overall_score.toFixed(1)}/10</span>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
                     Confidence: {(investabilityScore.confidence_level * 100).toFixed(0)}%
                   </div>
                 </div>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div>
-                    <h4 className="font-medium mb-2">Score Breakdown</h4>
-                    <div className="space-y-2">
-                      {Object.entries(investabilityScore.score_weights).map(([component, weight]) => (
-                        <div key={component} className="flex justify-between text-sm">
-                          <span className="capitalize">{component}</span>
-                          <span>{(weight * 100).toFixed(0)}% weight</span>
-                        </div>
-                      ))}
-                    </div>
+                {latestAnalysis?.executive_summary && (
+                  <div className="prose prose-sm max-w-none">
+                    <ReactMarkdown>{latestAnalysis.executive_summary}</ReactMarkdown>
                   </div>
-                </div>
+                )}
               </CardContent>
             </Card>
           )}
         </TabsContent>
 
-        <TabsContent value="detailed" className="space-y-6">
-          {/* Detailed Agent Analyses */}
-          {Object.entries(latestAnalysis.agent_analyses || {}).map(([agentType, analysis]) => (
-            <Card key={agentType}>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="capitalize flex items-center gap-2">
-                      {agentType === 'team' && <Users className="w-5 h-5" />}
-                      {agentType === 'market' && <TrendingUp className="w-5 h-5" />}
-                      {agentType === 'product' && <Target className="w-5 h-5" />}
-                      {agentType === 'competition' && <Shield className="w-5 h-5" />}
-                      {agentType.replace('_', ' ')} Analysis
-                    </CardTitle>
-                    <CardDescription>
-                      Confidence: {(analysis.confidence_level * 100).toFixed(0)}%
-                    </CardDescription>
-                  </div>
-                  <Badge className={getScoreColor(analysis.score)}>
-                    {analysis.score.toFixed(1)}/10
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <h4 className="font-medium mb-2">Summary</h4>
-                  <p className="text-muted-foreground">{analysis.summary}</p>
-                </div>
-
-                <Separator />
-
-                <div>
-                  <h4 className="font-medium mb-2">Detailed Analysis</h4>
-                  <ReactMarkdown className="prose prose-sm max-w-none">
-                    {analysis.detailed_analysis}
-                  </ReactMarkdown>
-                </div>
-
-                {analysis.key_findings?.length > 0 && (
-                  <>
-                    <Separator />
-                    <div>
-                      <h4 className="font-medium mb-2">Key Findings</h4>
-                      <ul className="space-y-1">
-                        {analysis.key_findings.map((finding, index) => (
-                          <li key={index} className="flex items-start gap-2">
-                            <CheckCircle className="w-4 h-4 text-success-500 mt-0.5 flex-shrink-0" />
-                            <span className="text-sm">{finding}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </>
-                )}
-
-                {analysis.supporting_evidence?.length > 0 && (
-                  <>
-                    <Separator />
-                    <div>
-                      <h4 className="font-medium mb-2">Supporting Evidence</h4>
-                      <ul className="space-y-1">
-                        {analysis.supporting_evidence.map((evidence, index) => (
-                          <li key={index} className="flex items-start gap-2">
-                            <div className="w-2 h-2 bg-muted-foreground rounded-full mt-2 flex-shrink-0" />
-                            <span className="text-sm text-muted-foreground">{evidence}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </TabsContent>
-
-        <TabsContent value="risks" className="space-y-6">
-          {/* Risks and Opportunities */}
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-danger-600">
-                  <AlertTriangle className="w-5 h-5" />
-                  Risks
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {latestAnalysis.risks_opportunities
-                    ?.filter(item => item.type === 'risk')
-                    .map((risk, index) => (
-                      <div key={index} className="p-4 border border-danger-200 bg-danger-50 rounded-lg">
-                        <div className="flex items-start justify-between mb-2">
-                          <h4 className="font-medium text-danger-800">{risk.title}</h4>
-                          <Badge variant="destructive" className="text-xs">
-                            {risk.level}
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-danger-700 mb-2">{risk.description}</p>
-                        <p className="text-xs text-danger-600">
-                          <strong>Impact:</strong> {risk.impact}
-                        </p>
-                        {risk.mitigation && (
-                          <p className="text-xs text-danger-600 mt-1">
-                            <strong>Mitigation:</strong> {risk.mitigation}
-                          </p>
-                        )}
-                      </div>
-                    )) || (
-                    <p className="text-muted-foreground text-center py-8">No risks identified</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-success-600">
-                  <TrendingUp className="w-5 h-5" />
-                  Opportunities
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {latestAnalysis.risks_opportunities
-                    ?.filter(item => item.type === 'opportunity')
-                    .map((opportunity, index) => (
-                      <div key={index} className="p-4 border border-success-200 bg-success-50 rounded-lg">
-                        <div className="flex items-start justify-between mb-2">
-                          <h4 className="font-medium text-success-800">{opportunity.title}</h4>
-                          <Badge variant="success" className="text-xs">
-                            {opportunity.level}
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-success-700 mb-2">{opportunity.description}</p>
-                        <p className="text-xs text-success-600">
-                          <strong>Impact:</strong> {opportunity.impact}
-                        </p>
-                      </div>
-                    )) || (
-                    <p className="text-muted-foreground text-center py-8">No opportunities identified</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="sources" className="space-y-6">
-          {/* Sources and Citations */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Sources & Citations</CardTitle>
-              <CardDescription>
-                All sources used in the analysis with traceability
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {Object.values(latestAnalysis.agent_analyses || {})
-                  .flatMap(analysis => analysis.sources || [])
-                  .map((source, index) => (
-                    <div key={index} className="p-4 border rounded-lg">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h4 className="font-medium">{source.title}</h4>
-                          {source.url && (
-                            <a 
-                              href={source.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-sm text-primary hover:underline flex items-center gap-1 mt-1"
-                            >
-                              {source.domain || source.url}
-                              <ExternalLink className="w-3 h-3" />
-                            </a>
-                          )}
-                          {source.excerpt && (
-                            <p className="text-sm text-muted-foreground mt-2 italic">
-                              "{source.excerpt}"
-                            </p>
-                          )}
-                        </div>
-                        {source.confidence_score && (
-                          <Badge variant="outline">
-                            {(source.confidence_score * 100).toFixed(0)}% confidence
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  )) || (
-                  <p className="text-muted-foreground text-center py-8">No sources available</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="chat" className="space-y-6">
-          {/* AI Co-pilot Chat */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MessageSquare className="w-5 h-5" />
-                AI Co-pilot
-              </CardTitle>
-              <CardDescription>
-                Ask questions about the analysis and get detailed answers
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-12 text-muted-foreground">
-                <MessageSquare className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                <h3 className="text-lg font-semibold mb-2">Coming Soon</h3>
-                <p>Interactive AI co-pilot will be available in the next update</p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
     </div>
   )

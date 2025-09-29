@@ -47,27 +47,16 @@ def main():
         logger.info(f"Project root: {project_root}")
         logger.info(f"Python path: {sys.path[:3]}")
         
-        # Import and run the server
-        from integrated_server import app
+        # Import and run the FastAPI app
         import uvicorn
         
-        logger.info("Server configuration loaded successfully")
-        
-        # Run the server
         uvicorn.run(
-            "integrated_server:app",
+            "main:app",
             host="0.0.0.0",
             port=8001,
             reload=True,
-            log_level="info",
-            access_log=True
+            log_level="info"
         )
-        
-    except ImportError as e:
-        logger.error(f"Import error: {e}")
-        logger.error("Make sure all dependencies are installed:")
-        logger.error("pip install fastapi uvicorn google-cloud-bigquery google-adk")
-        sys.exit(1)
         
     except Exception as e:
         logger.error(f"Failed to start server: {e}")

@@ -109,13 +109,13 @@ const apiClient = new ApiClient(API_BASE_URL)
 // Authentication API
 export const authApi = {
   login: (data: LoginForm) =>
-    apiClient.post<{ access_token: string; token_type: string; user_id: string }>(
+    apiClient.post<{ token: string; user: User }>(
       '/api/auth/login',
       data
     ),
 
   register: (data: RegisterForm) =>
-    apiClient.post<{ access_token: string; token_type: string; user_id: string }>(
+    apiClient.post<{ token: string; user: User }>(
       '/api/auth/register',
       data
     ),

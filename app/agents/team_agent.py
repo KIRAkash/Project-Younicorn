@@ -29,6 +29,9 @@ from .callbacks import (
 class TeamAnalysis(BaseModel):
     """Model for team analysis results."""
     
+    class Config:
+        extra = "forbid"
+    
     overall_score: float = Field(..., ge=1, le=10, description="Overall team score (1-10)")
     
     # Detailed scoring
@@ -45,13 +48,13 @@ class TeamAnalysis(BaseModel):
     leadership_evaluation: str = Field(..., description="Leadership and culture evaluation")
     
     # Key findings
-    strengths: list[str] = Field(..., description="Key team strengths")
-    weaknesses: list[str] = Field(..., description="Team weaknesses and gaps")
-    red_flags: list[str] = Field(default_factory=list, description="Red flags or concerns")
-    recommendations: list[str] = Field(..., description="Recommendations for team development")
+    strengths: list[str] = Field(default=[], description="Key team strengths")
+    weaknesses: list[str] = Field(default=[], description="Team weaknesses and gaps")
+    red_flags: list[str] = Field(default=[], description="Red flags or concerns")
+    recommendations: list[str] = Field(default=[], description="Recommendations for team development")
     
     # Supporting evidence
-    supporting_evidence: list[str] = Field(..., description="Supporting evidence and examples")
+    supporting_evidence: list[str] = Field(default=[], description="Supporting evidence and examples")
     confidence_level: float = Field(..., ge=0, le=1, description="Confidence in analysis (0-1)")
 
 
@@ -112,7 +115,7 @@ team_agent = LlmAgent(
     - Include actionable recommendations for team development
     - Cite all sources used in your research
     """,
-    tools=[google_search],
+    # tools=[google_search],  # Disabled for parallel execution compatibility
     output_schema=TeamAnalysis,  # Changed to use output_schema as per ADK docs
     output_key="team_analysis",
     after_agent_callback=[

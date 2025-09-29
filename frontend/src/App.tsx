@@ -62,19 +62,26 @@ function App() {
   return (
     <ThemeProvider defaultTheme="light" storageKey="minerva-ui-theme">
       <AuthProvider>
-        <div className="min-h-screen bg-background">
+        <div className="min-h-screen">
           <Routes>
             {/* Public routes */}
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             
             {/* Auth routes */}
             <Route
+              path="/auth/login"
+              element={
+                <PublicRoute>
+                  <LoginPage />
+                </PublicRoute>
+              }
+            />
+            <Route
               path="/auth/*"
               element={
                 <PublicRoute>
                   <AuthLayout>
                     <Routes>
-                      <Route path="login" element={<LoginPage />} />
                       <Route path="register" element={<RegisterPage />} />
                       <Route path="*" element={<Navigate to="/auth/login" replace />} />
                     </Routes>

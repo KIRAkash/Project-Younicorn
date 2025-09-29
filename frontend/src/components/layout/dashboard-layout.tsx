@@ -3,7 +3,6 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   BarChart3,
   Building2,
-  FileText,
   Home,
   Menu,
   Settings,
@@ -18,6 +17,7 @@ import {
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
+import { AuroraBackground } from '@/components/ui/aurora-background'
 import { useAuth } from '@/hooks/use-auth'
 import { useTheme } from '@/components/theme-provider'
 import { cn } from '@/utils'
@@ -80,23 +80,83 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const sidebarContent = (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between p-4 border-b lg:p-6">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-minerva-500 rounded-lg flex items-center justify-center">
-            <FileText className="w-5 h-5 text-white" />
-          </div>
-          <span className="font-bold text-lg">Minerva</span>
+      {/* Logo Section */}
+      <div className="flex items-center justify-between p-6">
+        <div className="flex items-center gap-3">
+          <img 
+            src="/logo.png" 
+            alt="Younicorns Logo" 
+            className="w-10 h-10 object-contain"
+          />
+          <span className="font-bold text-xl text-foreground">Younicorns</span>
         </div>
         <Button
           variant="ghost"
           size="icon"
-          className="lg:hidden"
+          className="lg:hidden text-foreground hover:bg-white/20 dark:hover:bg-white/10"
           onClick={() => setSidebarOpen(false)}
         >
           <X className="w-5 h-5" />
         </Button>
       </div>
-      <nav className="flex-1 p-4 space-y-2">
+
+      {/* Separator Line */}
+      <div className="border-t border-gray-300 dark:border-white/20 mx-4"></div>
+
+      {/* User Details Section */}
+      <div className="p-4">
+        <div className="flex items-center gap-3 p-3 rounded-lg bg-white/10 dark:bg-white/5">
+          <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+            <span className="text-white text-base font-medium">
+              {user?.full_name?.charAt(0).toUpperCase() || 'U'}
+            </span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-foreground truncate">{user?.full_name}</p>
+            <p className="text-xs text-muted-foreground capitalize">
+              {user?.role}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="px-4 pb-4">
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={toggleTheme}
+            className="flex-1 text-foreground hover:bg-white/20 dark:hover:bg-white/10 justify-start gap-2"
+          >
+            {theme === 'light' ? (
+              <>
+                <Moon className="w-4 h-4" />
+                Dark Mode
+              </>
+            ) : (
+              <>
+                <Sun className="w-4 h-4" />
+                Light Mode
+              </>
+            )}
+          </Button>
+          
+          <Button 
+            variant="ghost" 
+            size="icon"
+            className="text-foreground hover:bg-white/20 dark:hover:bg-white/10"
+          >
+            <Bell className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Another Separator */}
+      <div className="border-t border-gray-300 dark:border-white/20 mx-4"></div>
+
+      {/* Navigation Section */}
+      <nav className="flex-1 p-4 space-y-1">
         {navigation.map((item) => {
           const isActive = location.pathname.startsWith(item.href)
           return (
@@ -104,10 +164,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               key={item.name}
               to={item.href}
               className={cn(
-                "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
                 isActive
                   ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  : "text-muted-foreground hover:text-foreground hover:bg-white/20 dark:hover:bg-white/10"
               )}
               onClick={() => setSidebarOpen(false)}
             >
@@ -116,40 +176,45 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             </Link>
           )
         })}
-        <div className="!mt-auto border-t pt-4 space-y-2">
-          {userNavigation.map((item) => {
-            const isActive = location.pathname === item.href
-            return (
-              <Link
-                key={item.name}
-                to={item.href}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                  isActive
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                )}
-                onClick={() => setSidebarOpen(false)}
-              >
-                <item.icon className="w-5 h-5" />
-                {item.name}
-              </Link>
-            )
-          })}
-          <button
-            className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted w-full"
-            onClick={handleLogout}
-          >
-            <LogOut className="w-5 h-5" />
-            Logout
-          </button>
-        </div>
       </nav>
+
+      {/* Bottom Section */}
+      <div className="border-t border-gray-300 dark:border-white/20 p-4 space-y-1">
+        {/* User Navigation */}
+        {userNavigation.map((item) => {
+          const isActive = location.pathname === item.href
+          return (
+            <Link
+              key={item.name}
+              to={item.href}
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                isActive
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-white/20 dark:hover:bg-white/10"
+              )}
+              onClick={() => setSidebarOpen(false)}
+            >
+              <item.icon className="w-5 h-5" />
+              {item.name}
+            </Link>
+          )
+        })}
+        
+        <button
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-white/20 dark:hover:bg-white/10 w-full transition-colors"
+          onClick={handleLogout}
+        >
+          <LogOut className="w-5 h-5" />
+          Logout
+        </button>
+      </div>
     </div>
   )
 
   return (
-    <div className="min-h-screen bg-background">
+    <AuroraBackground>
+      <div className="min-h-screen relative">
       {/* Mobile sidebar */}
       <div className={cn(
         "fixed inset-0 z-50 lg:hidden",
@@ -157,8 +222,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       )}>
         <div className="fixed inset-0 bg-black/20" onClick={() => setSidebarOpen(false)} />
         <div className={cn(
-          "fixed inset-y-0 left-0 w-64 border-r shadow-lg",
-          isFounder ? "bg-muted/30" : "bg-card"
+          "fixed inset-y-0 left-0 w-64 border-r shadow-lg backdrop-blur-sm",
+          isFounder ? "bg-white/20 dark:bg-black/20" : "bg-white/30 dark:bg-black/30"
         )}>
           {sidebarContent}
         </div>
@@ -167,8 +232,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Desktop sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:w-64 lg:block">
         <div className={cn(
-          "flex flex-col h-full border-r",
-          isFounder ? "bg-muted/30" : "bg-card"
+          "flex flex-col h-full border-r backdrop-blur-sm",
+          isFounder ? "bg-white/20 dark:bg-black/20" : "bg-white/30 dark:bg-black/30"
         )}>
           {sidebarContent}
         </div>
@@ -176,66 +241,53 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
       {/* Main content */}
       <div className="lg:pl-64">
-        {/* Top bar */}
-        <div className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+        {/* Simplified Top bar */}
+        <div className="sticky top-0 z-40 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-white/20 lg:hidden">
           <div className="flex items-center justify-between px-4 py-3">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="lg:hidden"
-                onClick={() => setSidebarOpen(true)}
-              >
-                <Menu className="w-5 h-5" />
-              </Button>
-              
-              {!isFounder && (
-                <div className="hidden sm:flex items-center gap-2 bg-muted rounded-lg px-3 py-2 min-w-[300px]">
-                  <Search className="w-4 h-4 text-muted-foreground" />
-                  <input
-                    type="text"
-                    placeholder="Search startups, analyses..."
-                    className="bg-transparent border-0 outline-none flex-1 text-sm placeholder:text-muted-foreground"
-                  />
-                </div>
-              )}
-            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-foreground hover:bg-white/20 dark:hover:bg-white/10"
+              onClick={() => setSidebarOpen(true)}
+            >
+              <Menu className="w-5 h-5" />
+            </Button>
+            
+            {!isFounder && (
+              <div className="flex items-center gap-2 bg-white/20 dark:bg-white/10 rounded-lg px-3 py-2 flex-1 mx-4 max-w-sm">
+                <Search className="w-4 h-4 text-muted-foreground" />
+                <input
+                  type="text"
+                  placeholder="Search startups, analyses..."
+                  className="bg-transparent border-0 outline-none flex-1 text-sm placeholder:text-muted-foreground text-foreground"
+                />
+              </div>
+            )}
+          </div>
+        </div>
 
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" onClick={toggleTheme}>
-                {theme === 'light' ? (
-                  <Moon className="w-5 h-5" />
-                ) : (
-                  <Sun className="w-5 h-5" />
-                )}
-              </Button>
-              
-              <Button variant="ghost" size="icon">
-                <Bell className="w-5 h-5" />
-              </Button>
-
-              <div className="flex items-center gap-2 ml-2">
-                <div className="w-8 h-8 bg-minerva-500 rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm font-medium">
-                    {user?.full_name?.charAt(0).toUpperCase() || 'U'}
-                  </span>
-                </div>
-                <div className="hidden sm:block">
-                  <p className="text-sm font-medium">{user?.full_name}</p>
-                  <p className="text-xs text-muted-foreground capitalize">
-                    {user?.role}
-                  </p>
-                </div>
+        {/* Desktop-only search bar */}
+        {!isFounder && (
+          <div className="hidden lg:block sticky top-0 z-40 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-white/20">
+            <div className="px-6 py-3">
+              <div className="flex items-center gap-2 bg-white/20 dark:bg-white/10 rounded-lg px-3 py-2 max-w-md">
+                <Search className="w-4 h-4 text-muted-foreground" />
+                <input
+                  type="text"
+                  placeholder="Search startups, analyses..."
+                  className="bg-transparent border-0 outline-none flex-1 text-sm placeholder:text-muted-foreground text-foreground"
+                />
               </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Page content */}
         <main className="flex-1">
           {children}
         </main>
       </div>
-    </div>
+      </div>
+    </AuroraBackground>
   )
 }

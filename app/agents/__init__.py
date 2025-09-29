@@ -18,7 +18,7 @@ This module is deprecated. The new unified agent system is in app.agent.
 """
 
 # Import from the new unified agent system
-from ..agent import (
+from app.agent import (
     minerva_analysis_agent,
     StartupInfo,
     AgentAnalysis,

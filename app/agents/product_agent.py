@@ -29,6 +29,9 @@ from .callbacks import (
 class TractionMetrics(BaseModel):
     """Traction metrics analysis model."""
     
+    class Config:
+        extra = "forbid"
+    
     # User/Customer metrics
     total_users: Optional[int] = Field(None, description="Total number of users")
     monthly_active_users: Optional[int] = Field(None, description="Monthly active users")
@@ -60,6 +63,9 @@ class TractionMetrics(BaseModel):
 class ProductAnalysis(BaseModel):
     """Model for product and traction analysis results."""
     
+    class Config:
+        extra = "forbid"
+    
     overall_score: float = Field(..., ge=1, le=10, description="Overall product score (1-10)")
     
     # Detailed scoring
@@ -81,17 +87,17 @@ class ProductAnalysis(BaseModel):
     scalability_assessment: str = Field(..., description="Scalability and technical feasibility")
     
     # Key findings
-    strengths: list[str] = Field(..., description="Key product strengths")
-    weaknesses: list[str] = Field(..., description="Product weaknesses and gaps")
-    growth_drivers: list[str] = Field(..., description="Key growth drivers")
-    scaling_challenges: list[str] = Field(..., description="Potential scaling challenges")
+    strengths: list[str] = Field(default=[], description="Key product strengths")
+    weaknesses: list[str] = Field(default=[], description="Product weaknesses and gaps")
+    growth_drivers: list[str] = Field(default=[], description="Key growth drivers")
+    scaling_challenges: list[str] = Field(default=[], description="Potential scaling challenges")
     
     # Customer validation
     customer_feedback: str = Field(..., description="Customer feedback and validation evidence")
     use_case_validation: str = Field(..., description="Use case and problem validation")
     
     # Supporting evidence
-    supporting_evidence: list[str] = Field(..., description="Supporting evidence and examples")
+    supporting_evidence: list[str] = Field(default=[], description="Supporting evidence and examples")
     confidence_level: float = Field(..., ge=0, le=1, description="Confidence in analysis (0-1)")
 
 
@@ -168,7 +174,7 @@ product_agent = LlmAgent(
     - Highlight both strengths and areas of concern
     - Cite all sources used in your research
     """,
-    tools=[google_search],
+    # tools=[google_search],  # Disabled for parallel execution compatibility
     output_schema=ProductAnalysis,  # Changed to use output_schema as per ADK docs
     output_key="product_analysis",
     after_agent_callback=[

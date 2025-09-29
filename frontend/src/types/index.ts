@@ -82,20 +82,33 @@ export interface AnalysisResult {
   id: string
   startup_id: string
   request_id: string
-  agent_analyses: Record<AgentType, AgentAnalysis>
+  status: AnalysisStatus
+  // Legacy fields
+  agent_analyses?: Record<string, any> | string // Legacy JSON field from BigQuery
+  agent_results?: Record<string, any> | string // Legacy field for backward compatibility
   investability_score?: InvestabilityScore
   risks_opportunities: RiskOpportunity[]
+  key_insights: string[]
+  // Individual agent analysis columns (new schema)
+  team_analysis?: Record<string, any> | string
+  market_analysis?: Record<string, any> | string
+  product_analysis?: Record<string, any> | string
+  competition_analysis?: Record<string, any> | string
+  synthesis_analysis?: Record<string, any> | string
+  // Score fields from BigQuery
+  overall_score?: number
+  team_score?: number
+  market_score?: number
+  product_score?: number
+  competition_score?: number
+  investment_recommendation?: string
+  confidence_level?: number
+  // Additional analysis fields
   executive_summary?: string
   investment_memo?: string
-  key_insights: string[]
-  status: AnalysisStatus
   started_at?: string
   completed_at?: string
   total_duration_seconds?: number
-  overall_confidence?: number
-  data_completeness?: number
-  version: number
-  last_updated: string
 }
 
 export interface AgentAnalysis {

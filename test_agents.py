@@ -15,17 +15,21 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 async def test_agent_system():
-    """Test the Project Minerva agent system."""
+    """Test the Project Minerva agent system using proper ADK Runner pattern."""
     try:
         # Import the agent system
         from app.agent import minerva_analysis_agent, StartupInfo
-        from google.adk.agents.callback_context import CallbackContext
+        from google.adk.runners import InMemoryRunner
+        from google.genai import types as genai_types
+        import uuid
         
         logger.info("Successfully imported agent system")
         
-        # Create test startup data
+        import json
+        
+        # Create test startup data (using new string-based format)
         test_startup = StartupInfo(
-            company_info={
+            company_info=json.dumps({
                 "name": "TestAI Startup",
                 "description": "AI-powered testing platform for developers",
                 "industry": "ai_ml",
@@ -34,50 +38,103 @@ async def test_agent_system():
                 "employee_count": 5,
                 "funding_raised": 500000,
                 "funding_seeking": 2000000
-            },
-            founders=[
+            }),
+            founders=json.dumps([
                 {
                     "name": "John Doe",
                     "email": "john@testai.com",
                     "role": "CEO",
                     "bio": "Former Google engineer with 10 years experience in AI/ML"
                 }
-            ],
-            documents=[],
-            metadata={
+            ]),
+            documents=json.dumps([]),
+            metadata=json.dumps({
                 "competitive_advantages": ["Advanced AI algorithms", "Strong team"],
                 "traction_highlights": ["1000+ beta users", "$10K MRR"]
-            }
+            })
         )
         
         logger.info("Created test startup data")
         
-        # Create callback context
-        callback_context = CallbackContext(invocation_context=object())
-        callback_context.state = {
-            "analysis_id": "test-analysis-123",
-            "startup_id": "test-startup-123"
-        }
+        # Use proper ADK Runner pattern
+        startup_id = str(uuid.uuid4())
+        analysis_id = str(uuid.uuid4())
+        
+        # Create runner (it creates its own session service internally)
+        runner = InMemoryRunner(
+            agent=minerva_analysis_agent,
+            app_name="minerva_analysis_test"
+        )
+        
+        # Create a session with state using the runner's session service
+        session = await runner.session_service.create_session(
+            app_name="minerva_analysis_test",
+            user_id=f"test-user-{startup_id}",
+            session_id=analysis_id,
+            state={
+                "startup_info": test_startup.model_dump(),
+                "analysis_id": analysis_id,
+                "startup_id": startup_id
+            }
+        )
+        
+        # Create user message with startup data
+        user_message = genai_types.Content(
+            parts=[genai_types.Part(text=f"Please analyze this startup submission: {test_startup.model_dump_json()}")]
+        )
         
         logger.info("Starting agent analysis...")
         
-        # Run the analysis (with timeout for testing)
+        # Run the analysis and collect events
         try:
-            result = await asyncio.wait_for(
-                minerva_analysis_agent.run_async(
-                    input_data=test_startup.dict(),
-                    callback_context=callback_context
-                ),
-                timeout=300  # 5 minute timeout
-            )
+            events = []
+            result = None
+            
+            async for event in runner.run_async(
+                user_id=session.user_id,
+                session_id=session.id,
+                new_message=user_message
+            ):
+                events.append(event)
+                event_id = getattr(event, 'event_id', getattr(event, 'id', 'unknown'))
+                logger.info(f"Received event from {event.author}: {event_id}")
+                
+                # Try to extract structured result from event content
+                if event.content and event.content.parts:
+                    for part in event.content.parts:
+                        if part.text:
+                            # Try to parse JSON from the text
+                            try:
+                                import json
+                                # Look for JSON-like content
+                                text = part.text.strip()
+                                if text.startswith('{') and text.endswith('}'):
+                                    parsed = json.loads(text)
+                                    if isinstance(parsed, dict) and 'overall_score' in parsed:
+                                        result = parsed
+                                        break
+                            except (json.JSONDecodeError, ValueError):
+                                continue
+            
+            # Get final session state
+            final_session = await runner.session_service.get_session(session.id)
+            final_state = final_session.state if final_session else {}
             
             logger.info("Agent analysis completed successfully!")
+            logger.info(f"Total events received: {len(events)}")
             logger.info(f"Result type: {type(result)}")
             
             if isinstance(result, dict):
                 logger.info(f"Overall score: {result.get('overall_score', 'N/A')}")
                 logger.info(f"Recommendation: {result.get('investment_recommendation', 'N/A')}")
                 logger.info(f"Agent analyses: {list(result.get('agent_analyses', {}).keys())}")
+            else:
+                logger.info("No structured result found, but agent workflow completed")
+            
+            # Check session state for callback results
+            agent_results = final_state.get("agent_results", {})
+            if agent_results:
+                logger.info(f"Agent results in session state: {list(agent_results.keys())}")
             
             return True
             

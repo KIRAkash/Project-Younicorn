@@ -40,7 +40,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string): Promise<User> => {
     try {
       const response = await authApi.login({ email, password })
-      localStorage.setItem('minerva_token', response.access_token)
+      // Backend returns 'token', not 'access_token'
+      localStorage.setItem('minerva_token', response.token)
       const userData = await authApi.getCurrentUser()
       setUser(userData)
       return userData
@@ -52,7 +53,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = async (userData: any) => {
     try {
       const response = await authApi.register(userData)
-      localStorage.setItem('minerva_token', response.access_token)
+      // Backend returns 'token', not 'access_token' 
+      localStorage.setItem('minerva_token', response.token)
       const user = await authApi.getCurrentUser()
       setUser(user)
     } catch (error) {

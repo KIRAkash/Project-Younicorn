@@ -57,6 +57,28 @@
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
+  
+  /* Ensure proper text color inheritance for dark mode */
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-foreground;
+  }
+  
+  p {
+    @apply text-foreground;
+  }
+  
+  /* Fix any remaining hardcoded colors */
+  .text-black {
+    @apply text-foreground;
+  }
+  
+  .text-gray-900 {
+    @apply text-foreground;
+  }
+  
+  .text-slate-900 {
+    @apply text-foreground;
+  }
 }
 
 /* Custom scrollbar styles */
