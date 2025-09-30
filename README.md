@@ -24,6 +24,16 @@ The platform consists of two main portals with an asynchronous backend workflow:
 - Direct AI interaction capabilities
 - Investment decision support tools
 
+
+<img width="3440" height="1808" alt="localhost_5173_auth_login (1)" src="https://github.com/user-attachments/assets/ac81d5a8-9506-4e0d-928f-3b8fa7acf6cb" />
+<img width="3456" height="1782" alt="localhost_5173_auth_login (2)" src="https://github.com/user-attachments/assets/0050c2b4-2bef-4ac5-95a0-02c16410a49a" />
+<img width="3456" height="3932" alt="screencapture-localhost-5173-submit-2025-09-30-12_40_52" src="https://github.com/user-attachments/assets/ce37a704-d8ff-476d-954b-db5a55dff102" />
+<img width="3456" height="1782" alt="screencapture-localhost-5173-dashboard-2025-09-30-12_42_01" src="https://github.com/user-attachments/assets/42fcfc26-1e40-4e19-ac36-0bd1bf159214" />
+<img width="3456" height="1782" alt="screencapture-localhost-5173-startups-2025-09-30-12_41_31" src="https://github.com/user-attachments/assets/4c9bf042-2538-49cf-88c7-9bc45a781b65" />
+<img width="3456" height="2698" alt="screencapture-localhost-5173-startups-c16be333-883a-4281-8395-6573dc7dfc97-analysis-2025-09-30-12_42_51" src="https://github.com/user-attachments/assets/fcbc448f-8b21-471c-96c4-4a749fa181d0" />
+<img width="3456" height="4128" alt="screencapture-localhost-5173-startups-c16be333-883a-4281-8395-6573dc7dfc97-analysis-2025-09-30-12_42_28" src="https://github.com/user-attachments/assets/339eeaeb-9eba-46c0-a0cf-c9163fc54f61" />
+
+
 ## 🧠 Core AI Engine
 
 The backend is powered by a multi-agent system designed to mimic an expert analyst team:
