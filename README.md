@@ -24,6 +24,7 @@ The platform consists of two main portals with an asynchronous backend workflow:
 - Direct AI interaction capabilities
 - Investment decision support tools
 
+#### WATCH DEMO [HERE](https://drive.google.com/file/d/1HQ-hwaoQ2uYp-dM8Y8lId2W7-daZQg6U/view?usp=drive_link) 
 
 <img width="3440" height="1808" alt="localhost_5173_auth_login (1)" src="https://github.com/user-attachments/assets/ac81d5a8-9506-4e0d-928f-3b8fa7acf6cb" />
 <img width="3456" height="1782" alt="localhost_5173_auth_login (2)" src="https://github.com/user-attachments/assets/0050c2b4-2bef-4ac5-95a0-02c16410a49a" />
