@@ -27,12 +27,13 @@ The platform consists of two main portals with an asynchronous backend workflow:
 
 <img width="3440" height="1808" alt="localhost_5173_auth_login (1)" src="https://github.com/user-attachments/assets/ac81d5a8-9506-4e0d-928f-3b8fa7acf6cb" />
 <img width="3456" height="1782" alt="localhost_5173_auth_login (2)" src="https://github.com/user-attachments/assets/0050c2b4-2bef-4ac5-95a0-02c16410a49a" />
-<img width="3456" height="3932" alt="screencapture-localhost-5173-submit-2025-09-30-12_40_52" src="https://github.com/user-attachments/assets/ce37a704-d8ff-476d-954b-db5a55dff102" />
-<img width="3456" height="1782" alt="screencapture-localhost-5173-dashboard-2025-09-30-12_42_01" src="https://github.com/user-attachments/assets/42fcfc26-1e40-4e19-ac36-0bd1bf159214" />
-<img width="3456" height="1782" alt="screencapture-localhost-5173-startups-2025-09-30-12_41_31" src="https://github.com/user-attachments/assets/4c9bf042-2538-49cf-88c7-9bc45a781b65" />
-<img width="3456" height="2698" alt="screencapture-localhost-5173-startups-c16be333-883a-4281-8395-6573dc7dfc97-analysis-2025-09-30-12_42_51" src="https://github.com/user-attachments/assets/fcbc448f-8b21-471c-96c4-4a749fa181d0" />
-<img width="3456" height="4128" alt="screencapture-localhost-5173-startups-c16be333-883a-4281-8395-6573dc7dfc97-analysis-2025-09-30-12_42_28" src="https://github.com/user-attachments/assets/339eeaeb-9eba-46c0-a0cf-c9163fc54f61" />
+<img width="3456" height="5432" alt="screencapture-localhost-5173-submit-2025-10-04-22_31_14" src="https://github.com/user-attachments/assets/5ee09822-4310-47f2-86a9-96d7a0a27e3e" />
 
+<img width="3456" height="2476" alt="screencapture-localhost-5173-dashboard-2025-10-05-14_37_27" src="https://github.com/user-attachments/assets/8f6d19f7-0d92-4b4b-ada5-87fbf3a52cab" />
+
+<img width="3456" height="2964" alt="screencapture-localhost-5173-startups-19ff177d-e50b-49de-8bec-083b429917dd-2025-10-05-14_38_00" src="https://github.com/user-attachments/assets/20be7b22-cf54-4688-ae21-52101b6ffe85" />
+
+<img width="3456" height="9256" alt="screencapture-localhost-5173-startups-19ff177d-e50b-49de-8bec-083b429917dd-analysis-2025-10-05-14_38_26" src="https://github.com/user-attachments/assets/e98ffaa5-b465-4abc-b92f-3992c5a9fe37" />
 
 ## 🧠 Core AI Engine
 
