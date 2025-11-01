@@ -17,28 +17,24 @@ export const AuroraBackground = ({
     <main>
       <div
         className={cn(
-          "relative flex flex-col  h-[100vh] items-center justify-center bg-zinc-50 dark:bg-zinc-900 text-foreground transition-bg",
+          "relative flex flex-col min-h-screen text-foreground transition-bg",
           className
         )}
         {...props}
       >
-        <div className="absolute inset-0 overflow-hidden">
+        <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
           <div
             //   I'm sorry but this is what peak developer performance looks like // trigger warning
             className={cn(
               `
-            [--white-gradient:repeating-linear-gradient(100deg,var(--white)_0%,var(--white)_7%,var(--transparent)_10%,var(--transparent)_12%,var(--white)_16%)]
-            [--dark-gradient:repeating-linear-gradient(100deg,var(--black)_0%,var(--black)_7%,var(--transparent)_10%,var(--transparent)_12%,var(--black)_16%)]
-            [--aurora:repeating-linear-gradient(100deg,var(--blue-600)_10%,var(--purple-400)_15%,var(--violet-500)_20%,var(--pink-400)_25%,var(--orange-400)_30%)]
-            [background-image:var(--white-gradient),var(--aurora)]
-            dark:[background-image:var(--dark-gradient),var(--aurora)]
+            [--aurora:repeating-linear-gradient(100deg,var(--blue-500)_10%,var(--purple-500)_15%,var(--violet-500)_20%,var(--pink-500)_25%,var(--cyan-500)_30%)]
+            [background-image:var(--aurora)]
             [background-size:300%,_200%]
-            [background-position:50%_50%,50%_50%]
-            filter blur-[10px] invert dark:invert-0
-            after:content-[""] after:absolute after:inset-0 after:[background-image:var(--white-gradient),var(--aurora)] 
-            after:dark:[background-image:var(--dark-gradient),var(--aurora)]
+            [background-position:50%_50%]
+            filter blur-[50px]
+            after:content-[""] after:absolute after:inset-0 after:[background-image:var(--aurora)] 
             after:[background-size:200%,_100%] 
-            after:animate-aurora after:[background-attachment:fixed] after:mix-blend-difference
+            after:animate-aurora after:[background-attachment:fixed]
             pointer-events-none
             absolute -inset-[10px] opacity-50 will-change-transform`,
 
@@ -47,7 +43,9 @@ export const AuroraBackground = ({
             )}
           ></div>
         </div>
-        {children}
+        <div className="relative z-10 flex-1">
+          {children}
+        </div>
       </div>
     </main>
   );

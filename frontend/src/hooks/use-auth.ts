@@ -1,2 +1,2 @@
-// Re-export useAuth from auth-context for convenience
-export { useAuth } from '@/contexts/auth-context'
+// Re-export useAuth from AuthContext (Firebase-based) for convenience
+export { useAuth } from '@/contexts/AuthContext'

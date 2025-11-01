@@ -1,12 +1,8 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { 
-  User, 
   Bell, 
   Shield, 
-  Moon, 
-  Sun, 
-  Monitor, 
   Palette, 
   Download, 
   Trash2, 
@@ -26,13 +22,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAuth } from '@/hooks/use-auth'
 import { useTheme } from '@/components/theme-provider'
 import { useToast } from '@/hooks/use-toast'
-import { authApi } from '@/services/api'
+import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth'
 
 export function SettingsPage() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [isChangingPassword, setIsChangingPassword] = useState(false)
-  const { user, updateUser } = useAuth()
+  const { user } = useAuth()
   const { theme, setTheme } = useTheme()
   const { toast } = useToast()
 
@@ -59,23 +55,43 @@ export function SettingsPage() {
       return
     }
 
+    if (!user?.email) {
+      toast({
+        title: 'Error',
+        description: 'User email not found',
+        variant: 'destructive',
+      })
+      return
+    }
+
     setIsChangingPassword(true)
     try {
-      await authApi.changePassword({
-        current_password: data.current_password,
-        new_password: data.new_password,
-      })
+      // Re-authenticate user before changing password (Firebase requirement)
+      const credential = EmailAuthProvider.credential(
+        user.email,
+        data.current_password
+      )
+      await reauthenticateWithCredential(user, credential)
+      
+      // Update password
+      await updatePassword(user, data.new_password)
       
       resetPassword()
       toast({
         title: 'Password changed',
         description: 'Your password has been successfully updated.',
-        variant: 'success',
       })
-    } catch (error) {
+    } catch (error: any) {
+      let errorMessage = 'Failed to change password'
+      if (error.code === 'auth/wrong-password') {
+        errorMessage = 'Current password is incorrect'
+      } else if (error.code === 'auth/weak-password') {
+        errorMessage = 'New password is too weak'
+      }
+      
       toast({
         title: 'Password change failed',
-        description: error instanceof Error ? error.message : 'Failed to change password',
+        description: errorMessage,
         variant: 'destructive',
       })
     } finally {
@@ -83,21 +99,12 @@ export function SettingsPage() {
     }
   }
 
-  const handleNotificationChange = async (field: string, value: boolean) => {
-    try {
-      await updateUser({ [field]: value })
-      toast({
-        title: 'Settings updated',
-        description: 'Your notification preferences have been saved.',
-        variant: 'success',
-      })
-    } catch (error) {
-      toast({
-        title: 'Update failed',
-        description: 'Failed to update notification settings.',
-        variant: 'destructive',
-      })
-    }
+  const handleNotificationChange = async (_field: string, _value: boolean) => {
+    // TODO: Implement notification preferences with Firebase/backend
+    toast({
+      title: 'Coming soon',
+      description: 'Notification preferences will be available soon.',
+    })
   }
 
   const handleExportData = () => {
@@ -179,7 +186,7 @@ export function SettingsPage() {
             </div>
             <input
               type="checkbox"
-              checked={user?.email_notifications ?? true}
+              defaultChecked={true}
               onChange={(e) => handleNotificationChange('email_notifications', e.target.checked)}
               className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
             />

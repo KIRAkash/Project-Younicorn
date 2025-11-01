@@ -1,4 +1,4 @@
-"""Authentication routes for Project Minerva API."""
+"""Authentication routes for Project Younicorn API."""
 
 import uuid
 from typing import Dict, Any
@@ -48,8 +48,8 @@ async def logout() -> Dict[str, Any]:
 async def get_me(current_user: Dict[str, Any] = Depends(get_current_user_from_token)) -> UserResponse:
     """Get current user endpoint."""
     return UserResponse(
-        id=current_user["id"],
-        email=current_user["email"],
-        name=current_user["name"],
-        role=current_user["role"]
+        id=current_user.get("uid") or current_user.get("id", "unknown"),
+        email=current_user.get("email", ""),
+        name=current_user.get("name") or current_user.get("email", "User"),
+        role=current_user.get("role", "investor")
     )

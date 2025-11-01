@@ -16,19 +16,25 @@
 
 from google.adk.agents import LlmAgent
 from pydantic import BaseModel, Field
-
-from ..config import config, prompts
+from typing import Literal
+import datetime
+from .config import config, prompts
 from .callbacks import (
     track_agent_execution_callback,
     update_analysis_progress_callback,
 )
 
 
+class FounderQuestion(BaseModel):
+    """Structured question for founders."""
+    
+    question_text: str = Field(..., description="The question text to ask the founder")
+    category: Literal["team", "market", "product", "financials", "business_model"] = Field(..., description="Category of the question")
+    priority: Literal["low", "medium", "high"] = Field(..., description="Priority level of the question")
+
+
 class InvestmentRecommendation(BaseModel):
     """Investment recommendation model."""
-    
-    class Config:
-        extra = "forbid"
     
     recommendation: str = Field(..., description="Investment recommendation: Strong Buy, Buy, Hold, Pass")
     confidence_level: float = Field(..., ge=0, le=1, description="Confidence in recommendation (0-1)")
@@ -47,8 +53,6 @@ class InvestmentRecommendation(BaseModel):
 class RiskAssessment(BaseModel):
     """Risk assessment model."""
     
-    class Config:
-        extra = "forbid"
     
     overall_risk_level: str = Field(..., description="Overall risk level: Low, Medium, High, Critical")
     
@@ -67,9 +71,6 @@ class RiskAssessment(BaseModel):
 class OpportunityAssessment(BaseModel):
     """Opportunity assessment model."""
     
-    class Config:
-        extra = "forbid"
-    
     overall_opportunity_level: str = Field(..., description="Overall opportunity level: Low, Medium, High, Exceptional")
     
     # Opportunity categories
@@ -85,9 +86,6 @@ class OpportunityAssessment(BaseModel):
 
 class SynthesisResult(BaseModel):
     """Model for synthesis agent results."""
-    
-    class Config:
-        extra = "forbid"
     
     # Overall scoring
     overall_investability_score: float = Field(..., ge=1, le=10, description="Overall investability score (1-10)")
@@ -125,6 +123,9 @@ class SynthesisResult(BaseModel):
     analysis_completeness: float = Field(..., ge=0, le=1, description="Analysis completeness score (0-1)")
     data_quality: float = Field(..., ge=0, le=1, description="Overall data quality score (0-1)")
     confidence_level: float = Field(..., ge=0, le=1, description="Overall confidence in analysis (0-1)")
+    
+    # Questions for founders
+    questions: list[FounderQuestion] = Field(default=[], description="5-10 unique and most relevant questions for founders, synthesized from individual agent questions")
 
 
 synthesis_agent = LlmAgent(
@@ -132,82 +133,9 @@ synthesis_agent = LlmAgent(
     name="synthesis_agent",
     description="Synthesizes specialist analysis into final investment recommendations",
     instruction=f"""
+    Current date: {datetime.datetime.now().strftime("%Y-%m-%d")}
+    Startup Information: {{startup_info}}
     {prompts.synthesis_agent_prompt}
-    
-    You are the final synthesis agent responsible for compiling all specialist analyses into a comprehensive investment memo and recommendation. Your task is to:
-    
-    **1. INTEGRATE ALL ANALYSES**
-    - Review and synthesize findings from all specialist agents:
-      * Orchestrator's analysis plan and priorities
-      * Team agent's founder and team assessment
-      * Market agent's market sizing and opportunity analysis
-      * Product agent's traction and scalability assessment
-      * Competition agent's competitive landscape analysis
-    
-    **2. CALCULATE OVERALL INVESTABILITY SCORE**
-    - Extract individual scores from specialist agent analyses:
-      * team_analysis.overall_score for team_score
-      * market_analysis.overall_score for market_score  
-      * product_analysis.overall_score for product_score
-      * competition_analysis.overall_score for competition_score
-    - Weight the component scores appropriately:
-      * Team: 25% (execution capability is critical)
-      * Market: 25% (market opportunity size and timing)
-      * Product: 30% (product-market fit and traction)
-      * Competition: 20% (competitive position and defensibility)
-    - Calculate: overall_investability_score = (team_score * 0.25) + (market_score * 0.25) + (product_score * 0.30) + (competition_score * 0.20)
-    - Provide clear rationale for the overall score
-    
-    **3. DEVELOP INVESTMENT THESIS**
-    - Create a compelling and clear investment thesis
-    - Highlight the key value proposition and opportunity
-    - Address why this startup can succeed in this market
-    - Explain the potential for significant returns
-    
-    **4. COMPREHENSIVE RISK ASSESSMENT**
-    - Identify and categorize all major risks
-    - Assess likelihood and potential impact of each risk
-    - Provide mitigation strategies and monitoring requirements
-    - Highlight any deal-breaking risks or red flags
-    
-    **5. OPPORTUNITY ASSESSMENT**
-    - Identify key value creation opportunities
-    - Assess upside potential and growth scenarios
-    - Evaluate strategic options and expansion possibilities
-    - Consider exit scenarios and potential returns
-    
-    **6. INVESTMENT RECOMMENDATION**
-    - Provide clear investment recommendation (Strong Buy, Buy, Hold, Pass)
-    - Suggest appropriate valuation range and investment size
-    - Outline key investment terms and conditions
-    - Specify any additional due diligence requirements
-    
-    **7. EXECUTIVE SUMMARY**
-    - Create a concise executive summary for busy investors
-    - Highlight the most critical points and decision factors
-    - Include key metrics, scores, and recommendation
-    - Make it actionable and decision-oriented
-    
-    **SYNTHESIS PRINCIPLES**:
-    - Maintain objectivity and balance positive and negative findings
-    - Ensure consistency across all analyses and recommendations
-    - Highlight any conflicting findings or areas of uncertainty
-    - Provide evidence-based conclusions with proper citations
-    - Consider the investor's perspective and decision-making needs
-    
-    **QUALITY ASSURANCE**:
-    - Verify that all key investment criteria have been addressed
-    - Ensure recommendations are supported by evidence
-    - Check for logical consistency across all sections
-    - Validate that sources are properly cited and traceable
-    - Assess completeness and identify any gaps in analysis
-    
-    **OUTPUT REQUIREMENTS**:
-    - Provide comprehensive synthesis using the SynthesisResult model
-    - Create a professional investment memo suitable for investment committee
-    - Include clear, actionable recommendations with supporting rationale
-    - Ensure all claims are supported by evidence from specialist analyses
-    - Maintain professional tone appropriate for institutional investors
     """,
     output_schema=SynthesisResult,
     output_key="synthesis_result",

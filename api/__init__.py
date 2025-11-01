@@ -1,3 +1,3 @@
-"""Project Minerva API package."""
+"""Project Younicorn API package."""
 
 __version__ = "1.0.0"

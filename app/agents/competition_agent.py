@@ -15,11 +15,11 @@
 """Competition and competitive landscape analysis specialist agent."""
 
 from typing import Optional
-from google.adk.agents import LlmAgent
+from google.adk.agents import LlmAgent,SequentialAgent
 from google.adk.tools import google_search
 from pydantic import BaseModel, Field
-
-from ..config import config, prompts
+import datetime
+from .config import config, prompts
 from .callbacks import (
     collect_analysis_sources_callback,
     track_agent_execution_callback,
@@ -28,9 +28,6 @@ from .callbacks import (
 
 class Competitor(BaseModel):
     """Individual competitor analysis model."""
-    
-    class Config:
-        extra = "forbid"
     
     name: str = Field(..., description="Competitor name")
     category: str = Field(..., description="Direct, indirect, or substitute competitor")
@@ -41,6 +38,10 @@ class Competitor(BaseModel):
     valuation: Optional[float] = Field(None, description="Last known valuation (USD)")
     employee_count: Optional[int] = Field(None, description="Number of employees")
     founded_year: Optional[int] = Field(None, description="Year founded")
+    
+    # Web presence
+    public_url: Optional[str] = Field(None, description="Competitor's public website URL (e.g., 'doordash.com', 'uber.com')")
+    public_logo_url: Optional[str] = Field(None, description="Competitor's logo URL using Google favicon service in this exact format: https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://<COMPANY_URL>&size=64 where <COMPANY_URL> is replaced with the competitor's domain")
     
     # Market position
     market_share: Optional[float] = Field(None, description="Estimated market share (%)")
@@ -57,9 +58,6 @@ class Competitor(BaseModel):
 class CompetitiveAdvantage(BaseModel):
     """Competitive advantage analysis model."""
     
-    class Config:
-        extra = "forbid"
-    
     advantage_type: str = Field(..., description="Type of competitive advantage")
     description: str = Field(..., description="Detailed description of the advantage")
     sustainability: str = Field(..., description="How sustainable is this advantage")
@@ -69,9 +67,6 @@ class CompetitiveAdvantage(BaseModel):
 
 class CompetitionAnalysis(BaseModel):
     """Model for competition analysis results."""
-    
-    class Config:
-        extra = "forbid"
     
     overall_score: float = Field(..., ge=1, le=10, description="Overall competitive position score (1-10)")
     
@@ -110,6 +105,9 @@ class CompetitionAnalysis(BaseModel):
     # Supporting evidence
     supporting_evidence: list[str] = Field(default=[], description="Supporting evidence and sources")
     confidence_level: float = Field(..., ge=0, le=1, description="Confidence in analysis (0-1)")
+    
+    # Questions for founders
+    questions: list[str] = Field(default=[], description="Relevant questions for founders based on analysis - addressing information gaps, contradictions, clarifications, or additional info needed")
 
 
 competition_agent = LlmAgent(
@@ -117,87 +115,38 @@ competition_agent = LlmAgent(
     name="competition_agent",
     description="Analyzes competitive landscape, moat strength, and market positioning",
     instruction=f"""
+    Current date: {datetime.datetime.now().strftime("%Y-%m-%d")}
+    Startup Information: {{startup_info}}
+    Files Analysis: {{files_analysis}}
     {prompts.competition_agent_prompt}
-    
-    You are conducting comprehensive competitive analysis for investment due diligence. Your analysis should cover:
-    
-    **1. COMPETITIVE LANDSCAPE MAPPING**
-    - Identify and analyze direct competitors (same solution, same market)
-    - Evaluate indirect competitors (different solution, same problem)
-    - Assess substitute threats (alternative ways to solve the problem)
-    - Map competitive positioning and market share distribution
-    - Analyze competitive dynamics and market structure
-    
-    **2. COMPETITOR DEEP DIVE**
-    For each major competitor, analyze:
-    - Company background, funding, and financial health
-    - Product features, pricing, and go-to-market strategy
-    - Market share, customer base, and growth trajectory
-    - Strengths, weaknesses, and strategic positioning
-    - Recent developments, partnerships, and strategic moves
-    
-    **3. DIFFERENTIATION ANALYSIS**
-    - Evaluate the startup's unique value proposition
-    - Assess product/service differentiation vs. competitors
-    - Analyze pricing strategy and value positioning
-    - Review brand positioning and market perception
-    - Evaluate customer acquisition and retention advantages
-    
-    **4. DEFENSIVE MOAT ASSESSMENT**
-    - Identify and evaluate competitive advantages:
-      * Network effects and platform dynamics
-      * Proprietary technology and intellectual property
-      * Brand strength and customer loyalty
-      * Regulatory advantages and compliance barriers
-      * Data advantages and learning effects
-      * Supply chain and distribution advantages
-      * Cost advantages and economies of scale
-    
-    **5. BARRIERS TO ENTRY ANALYSIS**
-    - Assess barriers preventing new competitors from entering
-    - Evaluate switching costs for customers
-    - Analyze capital requirements and resource barriers
-    - Review regulatory and compliance requirements
-    - Assess technical complexity and expertise requirements
-    
-    **RESEARCH METHODOLOGY**:
-    - Use google_search to research competitors, their products, and market positioning
-    - Look up recent funding rounds, valuations, and financial information
-    - Search for competitive analysis reports and industry studies
-    - Research patent filings, partnerships, and strategic announcements
-    - Find customer reviews and comparisons between products
-    - Analyze job postings and hiring patterns for competitive intelligence
-    
-    **COMPETITIVE INTELLIGENCE SOURCES**:
-    - Company websites, product pages, and pricing information
-    - Funding databases (Crunchbase, PitchBook) for financial data
-    - Industry reports and analyst coverage
-    - Customer review sites and comparison platforms
-    - Social media presence and marketing strategies
-    - Patent databases and intellectual property filings
-    - News coverage and press releases
-    
-    **SCORING CRITERIA**:
-    - 9-10: Strong competitive position with sustainable advantages and high barriers
-    - 7-8: Good competitive position with some defensible advantages
-    - 5-6: Moderate position with limited differentiation
-    - 3-4: Weak position with significant competitive threats
-    - 1-2: Poor position with little differentiation and strong competition
-    
-    **OUTPUT REQUIREMENTS**:
-    - Provide detailed analysis using the CompetitionAnalysis model
-    - Include comprehensive competitor profiles with specific data
-    - Assess competitive advantages with evidence and sustainability
-    - Support all claims with credible sources and research
-    - Be objective about competitive threats and risks
-    - Provide actionable strategic recommendations
-    - Cite all sources used in your research
     """,
-    # tools=[google_search],  # Disabled for parallel execution compatibility
-    output_schema=CompetitionAnalysis,  # Changed to use output_schema as per ADK docs
+    output_schema=CompetitionAnalysis,
     output_key="competition_analysis",
     after_agent_callback=[
         track_agent_execution_callback,
         collect_analysis_sources_callback
     ],
+)
+
+competition_spy = LlmAgent(
+    model=config.specialist_model,
+    name="competition_spy",
+    description="Searches for additional information about the startup using Google search",
+    instruction=f"""
+    Current date: {datetime.datetime.now().strftime("%Y-%m-%d")}
+    Startup Information: {{startup_info}}
+    Files Analysis: {{files_analysis}}
+    {prompts.competition_spy_prompt}
+    """,
+    tools=[google_search]
+)
+
+
+competition_analyst = SequentialAgent(
+    name="competition_analyst",
+    sub_agents=[
+        competition_spy,
+        competition_agent
+    ],
+    description="Analyzes competitive landscape, moat strength, and market positioning. Runs the spy agent to gather additional information about the startup from internet and then runs the competition agent to analyze the competitive landscape, moat strength, and market positioning."
 )

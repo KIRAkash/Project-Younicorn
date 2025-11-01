@@ -69,6 +69,28 @@ export function formatCurrency(amount: number, currency = "USD"): string {
   }).format(amount)
 }
 
+export function formatINR(amount: number | undefined): string {
+  if (!amount || amount === 0) return "Not specified"
+  
+  // Convert to Crores or Lakhs based on amount
+  if (amount >= 10000000) {
+    // 1 Crore = 10,000,000
+    const crores = amount / 10000000
+    return `₹${crores.toFixed(2)} Cr`
+  } else if (amount >= 100000) {
+    // 1 Lakh = 100,000
+    const lakhs = amount / 100000
+    return `₹${lakhs.toFixed(2)} L`
+  } else {
+    // Less than 1 Lakh, show in thousands
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      maximumFractionDigits: 0,
+    }).format(amount)
+  }
+}
+
 export function formatNumber(number: number): string {
   return new Intl.NumberFormat("en-US").format(number)
 }

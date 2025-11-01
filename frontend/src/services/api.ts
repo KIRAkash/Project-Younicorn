@@ -12,6 +12,7 @@ import {
   Comment,
   AnalysisProgress,
 } from '@/types'
+import { auth } from '@/config/firebase'
 
 // Base API configuration - Updated to use integrated server on port 8001
 const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:8001'
@@ -28,9 +29,19 @@ class ApiClient {
     this.baseURL = baseURL
   }
 
-  private getAuthHeaders(): Record<string, string> {
-    const token = localStorage.getItem('minerva_token')
-    return token ? { Authorization: `Bearer ${token}` } : {}
+  private async getAuthHeaders(): Promise<Record<string, string>> {
+    // Get Firebase ID token if user is authenticated
+    const user = auth.currentUser
+    if (user) {
+      try {
+        const token = await user.getIdToken()
+        return { Authorization: `Bearer ${token}` }
+      } catch (error) {
+        console.error('Failed to get Firebase ID token:', error)
+        return {}
+      }
+    }
+    return {}
   }
 
   private async request<T>(
@@ -38,10 +49,11 @@ class ApiClient {
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`
+    const authHeaders = await this.getAuthHeaders()
     const config: RequestInit = {
       headers: {
         'Content-Type': 'application/json',
-        ...this.getAuthHeaders(),
+        ...authHeaders,
         ...options.headers,
       },
       ...options,
@@ -82,14 +94,11 @@ class ApiClient {
   }
 
   async upload<T>(endpoint: string, formData: FormData): Promise<T> {
-    const token = localStorage.getItem('minerva_token')
-    const headers: Record<string, string> = token
-      ? { Authorization: `Bearer ${token}` }
-      : {}
+    const authHeaders = await this.getAuthHeaders()
 
     const response = await fetch(`${this.baseURL}${endpoint}`, {
       method: 'POST',
-      headers,
+      headers: authHeaders,
       body: formData,
     })
 
@@ -226,6 +235,13 @@ export const analysisApi = {
   export: (id: string, format: 'pdf' | 'docx' | 'json' = 'pdf') =>
     `${API_BASE_URL}/api/analysis/${id}/export?format=${format}`,
 
+  // Re-analysis with investor notes
+  triggerReanalysis: (startupId: string, investorNotes: string) =>
+    apiClient.post<{ analysis_id: string; message: string; status: string }>(
+      `/api/startups/${startupId}/reanalyze`,
+      { investor_notes: investorNotes }
+    ),
+
   // Agent communication via LangGraph
   startAnalysis: async (startupId: string, config?: any) => {
     try {
@@ -330,13 +346,28 @@ export const chatApi = {
 
 // Dashboard API
 export const dashboardApi = {
+  // Legacy endpoint (keep for backward compatibility)
   getStats: () => apiClient.get<DashboardStats>('/api/dashboard/stats'),
 
-  getRecentActivity: () =>
-    apiClient.get<any[]>('/api/dashboard/activity'),
+  // New optimized endpoints
+  getCoreStats: () => apiClient.get<{
+    total_startups: number
+    completed_analysis: number
+    pending_analysis: number
+  }>('/api/dashboard/core-stats'),
 
-  getInsights: () =>
-    apiClient.get<any[]>('/api/dashboard/insights'),
+  getRecentStartups: (limit: number = 5) =>
+    apiClient.get<any[]>(`/api/dashboard/recent-startups?limit=${limit}`),
+
+  getBreakdowns: () => apiClient.get<{
+    industry_breakdown: Array<{ name: string; value: number }>
+    funding_stage_breakdown: Array<{ name: string; value: number }>
+    product_stage_breakdown: Array<{ name: string; value: number }>
+    company_structure_breakdown: Array<{ name: string; value: number }>
+  }>('/api/dashboard/breakdowns'),
+
+  getRecentActivity: (limit: number = 8) =>
+    apiClient.get<any[]>(`/api/dashboard/activity?limit=${limit}`),
 }
 
 // Utility functions
@@ -369,4 +400,150 @@ export const getScoreLabel = (score: number): string => {
   if (score >= 6) return 'Good'
   if (score >= 4) return 'Fair'
   return 'Poor'
+}
+
+// Startup Status API
+export const startupStatusApi = {
+  getStatus: (startupId: string) =>
+    apiClient.get<{
+      startup_id: string
+      investor_email: string
+      status: string
+      investor_note: string | null
+      status_updated_at: string | null
+      note_updated_at: string | null
+    }>(`/api/startups/${startupId}/status`),
+
+  updateStatus: (startupId: string, status: string) =>
+    apiClient.put<{ success: boolean; startup_id: string; status: string; updated_at: string }>(
+      `/api/startups/${startupId}/status`,
+      { status }
+    ),
+
+  updateNote: (startupId: string, note: string) =>
+    apiClient.put<{ success: boolean; startup_id: string; note: string; updated_at: string }>(
+      `/api/startups/${startupId}/note`,
+      { note }
+    ),
+}
+
+// Beacon AI Agent API
+export interface BeaconContextItem {
+  section_id: string
+  section_title: string
+  section_type: string
+  subsection?: string
+}
+
+export interface BeaconMessage {
+  role: 'user' | 'agent' | 'system'
+  content: string
+  timestamp?: string
+}
+
+export interface BeaconToolCall {
+  tool: string
+  args: Record<string, any>
+  result: {
+    success: boolean
+    message?: string
+    error?: string
+    [key: string]: any
+  }
+}
+
+export interface BeaconChatRequest {
+  startup_id: string
+  message: string
+  session_id: string  // Unique session ID for persistent conversations
+  selected_section: string  // Section context from analysis page (empty string if none)
+}
+
+export interface BeaconChatResponse {
+  success: boolean
+  message: string
+  tool_calls: BeaconToolCall[]
+  finish_reason?: string
+  error?: string
+}
+
+export const beaconApi = {
+  /**
+   * Chat with Beacon (non-streaming mode)
+   * Uses Firestore-backed persistent sessions for automatic conversation history.
+   * 
+   * @param data - Chat request with startup_id, message, and session_id
+   * @returns Complete response after agent finishes
+   * 
+   * @example
+   * ```typescript
+   * const sessionId = `${userId}_${startupId}`;
+   * const response = await beaconApi.chat({
+   *   startup_id: startupId,
+   *   message: "What is the market size?",
+   *   session_id: sessionId
+   * });
+   * ```
+   */
+  chat: (data: BeaconChatRequest) =>
+    apiClient.post<BeaconChatResponse>('/api/beacon/chat', data),
+
+  /**
+   * Chat with Beacon (streaming mode)
+   * Streams response in real-time using text/plain streaming.
+   * Uses Firestore-backed persistent sessions for automatic conversation history.
+   * 
+   * @param data - Chat request with startup_id, message, and session_id
+   * @returns Async generator yielding text chunks
+   * 
+   * @example
+   * ```typescript
+   * const sessionId = `${userId}_${startupId}`;
+   * for await (const chunk of beaconApi.chatStream({
+   *   startup_id: startupId,
+   *   message: "What is the market size?",
+   *   session_id: sessionId
+   * })) {
+   *   appendText(chunk);
+   * }
+   * ```
+   */
+  chatStream: async function* (data: BeaconChatRequest) {
+    const token = await auth.currentUser?.getIdToken();
+    const response = await fetch(`${API_BASE_URL}/api/beacon/chat-stream`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const reader = response.body?.getReader();
+    if (!reader) {
+      throw new Error('Response body is not readable');
+    }
+
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const text = decoder.decode(value, { stream: false });
+      yield text;
+    }
+  },
+
+  health: () =>
+    apiClient.get<{
+      status: string
+      service: string
+      model: string
+      features: string[]
+    }>('/api/beacon/health'),
 }

@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "vite build",
+    "build:check": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "type-check": "tsc --noEmit"
@@ -30,9 +31,11 @@
     "@tanstack/react-query": "^5.62.0",
     "@tanstack/react-query-devtools": "^5.89.0",
     "@tanstack/react-table": "^8.20.5",
+    "axios": "^1.12.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
+    "firebase": "^10.14.1",
     "framer-motion": "^11.15.0",
     "lucide-react": "^0.508.0",
     "react": "^18.2.0",

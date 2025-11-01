@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Startup script for the integrated Project Minerva server."""
+"""Startup script for the integrated Project Younicorn server."""
 
 import os
 import sys
@@ -43,7 +43,7 @@ logger = logging.getLogger(__name__)
 def main():
     """Main startup function."""
     try:
-        logger.info("Starting Project Minerva Integrated Server...")
+        logger.info("Starting Project Younicorn Integrated Server...")
         logger.info(f"Project root: {project_root}")
         logger.info(f"Python path: {sys.path[:3]}")
         

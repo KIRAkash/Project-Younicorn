@@ -1,0 +1,101 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ==================== Helper Functions ====================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isInvestor() {
+      return request.auth != null && request.auth.token.role == 'investor';
+    }
+    
+    function isFounder() {
+      return request.auth != null && request.auth.token.role == 'founder';
+    }
+    
+    function isAdmin() {
+      return request.auth != null && request.auth.token.role == 'admin';
+    }
+    
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+    
+    // ==================== Questions Collection ====================
+    
+    match /questions/{questionId} {
+      // Anyone authenticated can read questions
+      allow read: if isAuthenticated();
+      
+      // Only investors can create questions
+      allow create: if isInvestor() 
+        && request.resource.data.asked_by == request.auth.uid
+        && request.resource.data.asked_by_role == 'investor'
+        && request.resource.data.status == 'pending'
+        && request.resource.data.answer == null;
+      
+      // Question asker can update question text, category, priority, tags
+      // (but not answer, status, or other fields)
+      allow update: if isAuthenticated()
+        && resource.data.asked_by == request.auth.uid
+        && !request.resource.data.diff(resource.data).affectedKeys()
+          .hasAny(['asked_by', 'asked_by_name', 'asked_by_role', 'startup_id', 
+                   'created_at', 'answer', 'status', 'is_ai_generated']);
+      
+      // Founders can add answers to questions
+      // (only updating answer and status fields)
+      allow update: if isFounder()
+        && request.resource.data.status == 'answered'
+        && request.resource.data.answer != null
+        && request.resource.data.answer.answered_by == request.auth.uid
+        && !request.resource.data.diff(resource.data).affectedKeys()
+          .hasAny(['asked_by', 'asked_by_name', 'asked_by_role', 'startup_id', 
+                   'question_text', 'category', 'priority', 'tags', 'created_at', 'is_ai_generated']);
+      
+      // Question asker or admin can delete questions
+      allow delete: if resource.data.asked_by == request.auth.uid || isAdmin();
+    }
+    
+    // ==================== Notifications Collection ====================
+    
+    match /notifications/{notificationId} {
+      // Users can only read their own notifications
+      allow read: if isAuthenticated() 
+        && resource.data.user_id == request.auth.uid;
+      
+      // Only backend (via Admin SDK) can create notifications
+      // Frontend cannot create notifications directly
+      allow create: if false;
+      
+      // Users can mark their own notifications as read
+      // (only updating the 'read' field)
+      allow update: if isAuthenticated()
+        && resource.data.user_id == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['read'])
+        && request.resource.data.read == true;
+      
+      // Users can delete their own notifications
+      allow delete: if isAuthenticated()
+        && resource.data.user_id == request.auth.uid;
+    }
+    
+    // ==================== Activity Feed Collection ====================
+    
+    match /activity_feed/{activityId} {
+      // Anyone authenticated can read activity
+      allow read: if isAuthenticated();
+      
+      // Only backend (via Admin SDK) can create activity
+      // Frontend cannot create activity directly
+      allow create: if false;
+      
+      // No updates or deletes allowed
+      // Activity feed is append-only
+      allow update, delete: if false;
+    }
+  }
+}

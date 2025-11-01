@@ -1,24 +1,30 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
-import { Eye, EyeOff, Loader2 } from 'lucide-react'
+import { Eye, EyeOff, Loader2, Info } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { useAuth } from '@/hooks/use-auth'
+import { useAuth, UserRole } from '@/contexts/AuthContext'
 import { useToast } from '@/hooks/use-toast'
 import { RegisterForm } from '@/types'
 import { cn } from '@/utils'
+import { ProfileIconUpload } from '@/components/profile-icon-upload'
 
 export function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [profileIconUrl, setProfileIconUrl] = useState<string | undefined>()
+  const [profileIconGcsPath, setProfileIconGcsPath] = useState<string | undefined>()
   const navigate = useNavigate()
-  const { register: registerUser } = useAuth()
+  const location = useLocation()
+  const { signUp } = useAuth()
   const { toast } = useToast()
+  
+  const fromGoogleSignIn = location.state?.fromGoogleSignIn
 
   const {
     register,
@@ -42,13 +48,25 @@ export function RegisterPage() {
 
     setIsLoading(true)
     try {
-      await registerUser(data)
+      // Firebase signUp expects role as UserRole type
+      await signUp(
+        data.email, 
+        data.password, 
+        data.role as UserRole, 
+        data.full_name
+      )
       toast({
         title: 'Account created!',
         description: 'Welcome to Project Minerva. Your account has been created successfully.',
         variant: 'success',
       })
-      navigate('/dashboard')
+      
+      // Redirect based on role
+      if (data.role === 'founder') {
+        navigate('/submit')
+      } else {
+        navigate('/dashboard')
+      }
     } catch (error) {
       toast({
         title: 'Registration failed',
@@ -69,7 +87,22 @@ export function RegisterPage() {
         </p>
       </div>
 
+      {fromGoogleSignIn && (
+        <div className="flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+          <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+              Complete your registration
+            </p>
+            <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+              We found your Google account, but you need to complete registration by selecting your role and creating a password.
+            </p>
+          </div>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        {/* Row 1: Full name and Email */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="full_name">Full name</Label>
@@ -112,114 +145,136 @@ export function RegisterPage() {
           </div>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="role">Role</Label>
-          <Select onValueChange={(value) => setValue('role', value as 'founder' | 'investor')}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select your role" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="founder">Startup Founder</SelectItem>
-              <SelectItem value="investor">Investor</SelectItem>
-            </SelectContent>
-          </Select>
-          {errors.role && (
-            <p className="text-sm text-destructive">{errors.role.message}</p>
-          )}
+        {/* Row 2: Profile Photo on left, Role + Company + Job title on right */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          {/* Profile Photo - spans 1 column */}
+          <div className="space-y-2">
+            <Label>Profile Photo (optional)</Label>
+            <ProfileIconUpload
+              currentIconUrl={profileIconUrl}
+              userName={watch('full_name') || 'User'}
+              onUploadSuccess={(signedUrl, gcsPath) => {
+                setProfileIconUrl(signedUrl)
+                setProfileIconGcsPath(gcsPath)
+              }}
+            />
+          </div>
+
+          {/* Right side fields - spans 2 columns */}
+          <div className="sm:col-span-2 space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="role">Role</Label>
+              <Select onValueChange={(value) => setValue('role', value as 'founder' | 'investor')}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select your role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="founder">Startup Founder</SelectItem>
+                  <SelectItem value="investor">Investor</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.role && (
+                <p className="text-sm text-destructive">{errors.role.message}</p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="company">Company (optional)</Label>
+                <Input
+                  id="company"
+                  type="text"
+                  placeholder="Your company"
+                  {...register('company')}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="title">Job title (optional)</Label>
+                <Input
+                  id="title"
+                  type="text"
+                  placeholder="Your job title"
+                  {...register('title')}
+                />
+              </div>
+            </div>
+          </div>
         </div>
 
+        {/* Row 3: Password fields in 2 columns */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="company">Company (optional)</Label>
-            <Input
-              id="company"
-              type="text"
-              placeholder="Your company"
-              {...register('company')}
-            />
+            <Label htmlFor="password">Password</Label>
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Create a password"
+                {...register('password', {
+                  required: 'Password is required',
+                  minLength: {
+                    value: 8,
+                    message: 'Password must be at least 8 characters',
+                  },
+                  pattern: {
+                    value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+                    message: 'Password must contain at least one uppercase letter, one lowercase letter, and one number',
+                  },
+                })}
+                className={cn(errors.password && 'border-destructive', 'pr-10')}
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <Eye className="h-4 w-4 text-muted-foreground" />
+                )}
+              </Button>
+            </div>
+            {errors.password && (
+              <p className="text-sm text-destructive">{errors.password.message}</p>
+            )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="title">Job title (optional)</Label>
-            <Input
-              id="title"
-              type="text"
-              placeholder="Your job title"
-              {...register('title')}
-            />
+            <Label htmlFor="confirm_password">Confirm password</Label>
+            <div className="relative">
+              <Input
+                id="confirm_password"
+                type={showConfirmPassword ? 'text' : 'password'}
+                placeholder="Confirm your password"
+                {...register('confirm_password', {
+                  required: 'Please confirm your password',
+                  validate: (value) =>
+                    value === password || 'Passwords do not match',
+                })}
+                className={cn(errors.confirm_password && 'border-destructive', 'pr-10')}
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              >
+                {showConfirmPassword ? (
+                  <EyeOff className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <Eye className="h-4 w-4 text-muted-foreground" />
+                )}
+              </Button>
+            </div>
+            {errors.confirm_password && (
+              <p className="text-sm text-destructive">{errors.confirm_password.message}</p>
+            )}
           </div>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
-          <div className="relative">
-            <Input
-              id="password"
-              type={showPassword ? 'text' : 'password'}
-              placeholder="Create a password"
-              {...register('password', {
-                required: 'Password is required',
-                minLength: {
-                  value: 8,
-                  message: 'Password must be at least 8 characters',
-                },
-                pattern: {
-                  value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-                  message: 'Password must contain at least one uppercase letter, one lowercase letter, and one number',
-                },
-              })}
-              className={cn(errors.password && 'border-destructive', 'pr-10')}
-            />
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-              onClick={() => setShowPassword(!showPassword)}
-            >
-              {showPassword ? (
-                <EyeOff className="h-4 w-4 text-muted-foreground" />
-              ) : (
-                <Eye className="h-4 w-4 text-muted-foreground" />
-              )}
-            </Button>
-          </div>
-          {errors.password && (
-            <p className="text-sm text-destructive">{errors.password.message}</p>
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="confirm_password">Confirm password</Label>
-          <div className="relative">
-            <Input
-              id="confirm_password"
-              type={showConfirmPassword ? 'text' : 'password'}
-              placeholder="Confirm your password"
-              {...register('confirm_password', {
-                required: 'Please confirm your password',
-                validate: (value) =>
-                  value === password || 'Passwords do not match',
-              })}
-              className={cn(errors.confirm_password && 'border-destructive', 'pr-10')}
-            />
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-            >
-              {showConfirmPassword ? (
-                <EyeOff className="h-4 w-4 text-muted-foreground" />
-              ) : (
-                <Eye className="h-4 w-4 text-muted-foreground" />
-              )}
-            </Button>
-          </div>
-          {errors.confirm_password && (
-            <p className="text-sm text-destructive">{errors.confirm_password.message}</p>
-          )}
         </div>
 
         <div className="flex items-center space-x-2">

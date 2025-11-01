@@ -1,4 +1,4 @@
-"""JSON utility functions for Project Minerva API."""
+"""JSON utility functions for Project Younicorn API."""
 
 import json
 import re

@@ -1,4 +1,4 @@
-"""Configuration settings for Project Minerva API."""
+"""Configuration settings for Project Younicorn API."""
 
 import os
 import json
@@ -21,7 +21,7 @@ class Settings:
         self._setup_google_cloud_credentials()
         
         # API Configuration
-        self.api_title = "Project Minerva Integrated API"
+        self.api_title = "Project Younicorn Integrated API"
         self.api_description = "AI-Powered Startup Due Diligence Platform with BigQuery Integration"
         self.api_version = "1.0.0"
         
@@ -32,12 +32,21 @@ class Settings:
             "http://localhost:5173",
             "http://127.0.0.1:3000",
             "http://127.0.0.1:3001",
-            "http://127.0.0.1:5173"
+            "http://127.0.0.1:5173",
+            "https://younicorn-frontend-926683458739.us-central1.run.app"
         ]
         
         # BigQuery Configuration
         self.bigquery_dataset_id = "minerva_dataset"
         self.google_cloud_project = os.environ.get("GOOGLE_CLOUD_PROJECT")
+        
+        # Firestore Configuration
+        self.firestore_project_id = os.environ.get("GOOGLE_CLOUD_PROJECT")
+        self.firestore_database_id = "younicorn-fs-db"
+        # Uses same service account as BigQuery (minerva-key.json)
+        
+        # GCS Configuration
+        self.gcs_bucket_name = os.environ.get("GCS_BUCKET_NAME", "younicorns-uploads")
         
         # Demo Authentication
         self.demo_users = {

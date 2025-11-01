@@ -85,8 +85,9 @@ class BigQueryClient:
             logger.info(f"Created table {table_name}")
     
     def _get_startup_schema(self) -> List[bigquery.SchemaField]:
-        """Get schema for startups table."""
+        """Get schema for startups table with comprehensive fields."""
         return [
+            # Basic Info
             bigquery.SchemaField("id", "STRING", mode="REQUIRED"),
             bigquery.SchemaField("company_name", "STRING", mode="REQUIRED"),
             bigquery.SchemaField("description", "STRING", mode="NULLABLE"),
@@ -96,12 +97,61 @@ class BigQueryClient:
             bigquery.SchemaField("website_url", "STRING", mode="NULLABLE"),
             bigquery.SchemaField("founded_date", "TIMESTAMP", mode="NULLABLE"),
             bigquery.SchemaField("employee_count", "INTEGER", mode="NULLABLE"),
-            bigquery.SchemaField("revenue_run_rate", "FLOAT", mode="NULLABLE"),
-            bigquery.SchemaField("funding_raised", "FLOAT", mode="NULLABLE"),
-            bigquery.SchemaField("funding_seeking", "FLOAT", mode="NULLABLE"),
+            
+            # Product & Technology (Point 1)
+            bigquery.SchemaField("product_stage", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("technology_stack", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("ip_patents", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("development_timeline", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("product_roadmap", "STRING", mode="NULLABLE"),
+            
+            # Market & Customer (Point 2)
+            bigquery.SchemaField("target_customer_profile", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("customer_acquisition_cost", "FLOAT", mode="NULLABLE"),  # INR
+            bigquery.SchemaField("lifetime_value", "FLOAT", mode="NULLABLE"),  # INR
+            bigquery.SchemaField("current_customer_count", "INTEGER", mode="NULLABLE"),
+            bigquery.SchemaField("customer_retention_rate", "FLOAT", mode="NULLABLE"),  # percentage
+            bigquery.SchemaField("geographic_markets", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("go_to_market_strategy", "STRING", mode="NULLABLE"),
+            
+            # Traction & Metrics (Point 3)
+            bigquery.SchemaField("monthly_recurring_revenue", "FLOAT", mode="NULLABLE"),  # INR
+            bigquery.SchemaField("annual_recurring_revenue", "FLOAT", mode="NULLABLE"),  # INR
+            bigquery.SchemaField("revenue_growth_rate", "FLOAT", mode="NULLABLE"),  # percentage
+            bigquery.SchemaField("user_growth_rate", "FLOAT", mode="NULLABLE"),  # percentage
+            bigquery.SchemaField("burn_rate", "FLOAT", mode="NULLABLE"),  # INR per month
+            bigquery.SchemaField("runway_months", "INTEGER", mode="NULLABLE"),
+            bigquery.SchemaField("key_performance_indicators", "STRING", mode="NULLABLE"),
+            
+            # Financial Details (Point 6)
+            bigquery.SchemaField("revenue_run_rate", "FLOAT", mode="NULLABLE"),  # INR
+            bigquery.SchemaField("funding_raised", "FLOAT", mode="NULLABLE"),  # INR
+            bigquery.SchemaField("funding_seeking", "FLOAT", mode="NULLABLE"),  # INR
+            bigquery.SchemaField("previous_funding_rounds", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("current_investors", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("use_of_funds", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("profitability_timeline", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("unit_economics", "STRING", mode="NULLABLE"),
+            
+            # Legal & Compliance (Point 8)
+            bigquery.SchemaField("company_structure", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("incorporation_location", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("regulatory_requirements", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("legal_issues", "STRING", mode="NULLABLE"),
+            
+            # Vision & Strategy (Point 9)
+            bigquery.SchemaField("mission_statement", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("five_year_vision", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("exit_strategy", "STRING", mode="NULLABLE"),
+            bigquery.SchemaField("social_impact", "STRING", mode="NULLABLE"),
+            
+            # JSON Fields
             bigquery.SchemaField("founders", "JSON", mode="NULLABLE"),
             bigquery.SchemaField("documents", "JSON", mode="NULLABLE"),
             bigquery.SchemaField("metadata", "JSON", mode="NULLABLE"),
+            bigquery.SchemaField("company_info", "JSON", mode="NULLABLE"),
+            
+            # System Fields
             bigquery.SchemaField("submitted_by", "STRING", mode="REQUIRED"),
             bigquery.SchemaField("submission_timestamp", "TIMESTAMP", mode="REQUIRED"),
             bigquery.SchemaField("last_updated", "TIMESTAMP", mode="REQUIRED"),

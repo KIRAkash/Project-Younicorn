@@ -28,6 +28,8 @@ export interface StartupSubmission {
   analysis_requested: boolean
   analysis_started?: string
   analysis_completed?: string
+  analysis_status?: string
+  overall_score?: number
   status: string
 }
 
@@ -35,14 +37,59 @@ export interface CompanyInfo {
   name: string
   description: string
   website_url?: string
+  logo_url?: string  // GCS signed URL for company logo
   industry: Industry
   funding_stage: FundingStage
   location: string
   founded_date?: string
   employee_count?: number
-  revenue_run_rate?: number
-  funding_raised?: number
-  funding_seeking?: number
+  
+  // Product & Technology (Point 1)
+  product_stage: ProductStage
+  technology_stack?: string
+  ip_patents?: string
+  development_timeline?: string
+  product_roadmap?: string
+  
+  // Market & Customer (Point 2)
+  target_customer_profile?: string
+  customer_acquisition_cost?: number // INR
+  lifetime_value?: number // INR
+  current_customer_count?: number
+  customer_retention_rate?: number // percentage
+  geographic_markets?: string
+  go_to_market_strategy?: string
+  
+  // Traction & Metrics (Point 3)
+  monthly_recurring_revenue?: number // INR
+  annual_recurring_revenue?: number // INR
+  revenue_growth_rate?: number // percentage
+  user_growth_rate?: number // percentage
+  burn_rate?: number // INR per month
+  runway_months?: number
+  key_performance_indicators?: string
+  
+  // Financial Details (Point 6) - renamed existing fields
+  revenue_run_rate?: number // INR
+  funding_raised?: number // INR
+  funding_seeking?: number // INR
+  previous_funding_rounds?: string
+  current_investors?: string
+  use_of_funds?: string
+  profitability_timeline?: string
+  unit_economics?: string
+  
+  // Legal & Compliance (Point 8)
+  company_structure: CompanyStructure
+  incorporation_location: string
+  regulatory_requirements?: string
+  legal_issues?: string
+  
+  // Vision & Strategy (Point 9)
+  mission_statement?: string
+  five_year_vision?: string
+  exit_strategy?: string
+  social_impact?: string
 }
 
 export interface FounderInfo {
@@ -53,6 +100,11 @@ export interface FounderInfo {
   bio?: string
   previous_experience: string[]
   education: string[]
+  
+  // Team & Advisors (Point 5)
+  previous_exits?: string
+  domain_expertise_years?: number
+  key_achievements?: string
 }
 
 export interface StartupDocument {
@@ -71,11 +123,25 @@ export interface StartupDocument {
 export interface StartupMetadata {
   key_metrics: Record<string, any>
   competitive_advantages: string[]
-  target_market?: string
-  business_model?: string
   traction_highlights: string[]
-  use_of_funds?: string
-  exit_strategy?: string
+  
+  // Team & Advisors (Point 5)
+  advisory_board?: AdvisorInfo[]
+  key_hires_planned?: string
+  team_gaps?: string
+  
+  // Additional metadata
+  main_competitors?: string[]
+  market_size_tam?: number // INR
+  market_size_sam?: number // INR
+  market_size_som?: number // INR
+  unique_value_proposition?: string
+}
+
+export interface AdvisorInfo {
+  name: string
+  background: string
+  expertise: string
 }
 
 export interface AnalysisResult {
@@ -109,6 +175,7 @@ export interface AnalysisResult {
   started_at?: string
   completed_at?: string
   total_duration_seconds?: number
+  company_name?: string
 }
 
 export interface AgentAnalysis {
@@ -234,6 +301,21 @@ export type FundingStage =
   | 'series_c'
   | 'later_stage'
 
+export type ProductStage = 
+  | 'idea'
+  | 'prototype'
+  | 'mvp'
+  | 'beta'
+  | 'live'
+
+export type CompanyStructure = 
+  | 'private_limited'
+  | 'llp'
+  | 'sole_proprietorship'
+  | 'partnership'
+  | 'public_limited'
+  | 'other'
+
 export type DocumentType = 
   | 'pitch_deck'
   | 'business_plan'
@@ -314,13 +396,20 @@ export interface RegisterForm {
   terms: boolean
 }
 
+export interface DocumentUpload {
+  filename: string
+  content_type: string
+  data: string  // Base64 encoded
+  size: number
+}
+
 export interface StartupSubmissionForm {
   company_info: Omit<CompanyInfo, 'industry' | 'funding_stage'> & {
     industry: string
     funding_stage: string
   }
   founders: FounderInfo[]
-  documents: File[]
+  documents: DocumentUpload[]
   metadata: StartupMetadata
 }
 
@@ -346,7 +435,18 @@ export interface DashboardStats {
   recent_submissions: StartupSubmission[]
   industry_breakdown: ChartData[]
   funding_stage_breakdown: ChartData[]
-  monthly_submissions: TimeSeriesData[]
+  product_stage_breakdown: ChartData[]
+  company_structure_breakdown: ChartData[]
+  recent_activity: RecentActivity[]
+}
+
+export interface RecentActivity {
+  company_name: string
+  status: string
+  overall_score?: number
+  investment_recommendation?: string
+  started_at?: string
+  completed_at?: string
 }
 
 // Filter types

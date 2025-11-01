@@ -15,11 +15,11 @@
 """Product and traction analysis specialist agent."""
 
 from typing import Optional
-from google.adk.agents import LlmAgent
+from google.adk.agents import LlmAgent, SequentialAgent
 from google.adk.tools import google_search
 from pydantic import BaseModel, Field
-
-from ..config import config, prompts
+import datetime
+from .config import config, prompts
 from .callbacks import (
     collect_analysis_sources_callback,
     track_agent_execution_callback,
@@ -28,9 +28,6 @@ from .callbacks import (
 
 class TractionMetrics(BaseModel):
     """Traction metrics analysis model."""
-    
-    class Config:
-        extra = "forbid"
     
     # User/Customer metrics
     total_users: Optional[int] = Field(None, description="Total number of users")
@@ -62,9 +59,6 @@ class TractionMetrics(BaseModel):
 
 class ProductAnalysis(BaseModel):
     """Model for product and traction analysis results."""
-    
-    class Config:
-        extra = "forbid"
     
     overall_score: float = Field(..., ge=1, le=10, description="Overall product score (1-10)")
     
@@ -99,6 +93,9 @@ class ProductAnalysis(BaseModel):
     # Supporting evidence
     supporting_evidence: list[str] = Field(default=[], description="Supporting evidence and examples")
     confidence_level: float = Field(..., ge=0, le=1, description="Confidence in analysis (0-1)")
+    
+    # Questions for founders
+    questions: list[str] = Field(default=[], description="Relevant questions for founders based on analysis - addressing information gaps, contradictions, clarifications, or additional info needed")
 
 
 product_agent = LlmAgent(
@@ -106,79 +103,37 @@ product_agent = LlmAgent(
     name="product_agent",
     description="Analyzes product-market fit, traction metrics, and scalability potential",
     instruction=f"""
+    Current date: {datetime.datetime.now().strftime("%Y-%m-%d")}
+    Startup Information: {{startup_info}}
+    Files Analysis: {{files_analysis}}
     {prompts.product_agent_prompt}
-    
-    You are conducting comprehensive product and traction analysis for investment due diligence. Your analysis should cover:
-    
-    **1. PRODUCT-MARKET FIT ASSESSMENT**
-    - Evaluate how well the product solves a real customer problem
-    - Assess product differentiation and unique value proposition
-    - Analyze customer feedback and satisfaction indicators
-    - Review product development process and customer involvement
-    - Evaluate feature usage and adoption patterns
-    
-    **2. VALUE PROPOSITION ANALYSIS**
-    - Assess clarity and strength of value proposition
-    - Evaluate competitive advantages and differentiation
-    - Analyze pricing strategy and value delivery
-    - Review customer willingness to pay and price sensitivity
-    - Assess value capture mechanisms
-    
-    **3. TRACTION METRICS EVALUATION**
-    - Analyze user growth and engagement metrics
-    - Evaluate revenue growth and unit economics
-    - Assess customer acquisition and retention metrics
-    - Review key performance indicators and benchmarks
-    - Validate metric quality and measurement methodology
-    
-    **4. SCALABILITY & TECHNICAL ASSESSMENT**
-    - Evaluate technical architecture and scalability
-    - Assess operational scalability and unit economics
-    - Review go-to-market strategy and distribution channels
-    - Analyze network effects and viral growth potential
-    - Evaluate barriers to scaling and resource requirements
-    
-    **5. REVENUE MODEL VALIDATION**
-    - Assess revenue model sustainability and scalability
-    - Evaluate pricing strategy and market acceptance
-    - Analyze customer lifetime value and acquisition costs
-    - Review monetization strategy and conversion rates
-    - Assess diversification and revenue stream stability
-    
-    **RESEARCH METHODOLOGY**:
-    - Use google_search to research the product, customer reviews, and market reception
-    - Look up competitor products and feature comparisons
-    - Search for customer testimonials, case studies, and press coverage
-    - Research industry benchmarks for key metrics
-    - Validate traction claims with public information and third-party sources
-    
-    **METRIC VALIDATION**:
-    - Cross-reference claimed metrics with industry benchmarks
-    - Look for third-party validation of growth and usage claims
-    - Assess metric quality and measurement methodology
-    - Identify potential vanity metrics vs. meaningful indicators
-    - Evaluate data transparency and reporting consistency
-    
-    **SCORING CRITERIA**:
-    - 9-10: Exceptional product-market fit with strong traction and clear scalability
-    - 7-8: Good product-market fit with solid traction and growth potential
-    - 5-6: Moderate fit with decent traction but some concerns
-    - 3-4: Weak product-market fit with limited traction
-    - 1-2: Poor fit with minimal traction or major product issues
-    
-    **OUTPUT REQUIREMENTS**:
-    - Provide detailed analysis using the ProductAnalysis model
-    - Include comprehensive traction metrics evaluation
-    - Support all assessments with specific evidence and sources
-    - Be critical about metric quality and reliability
-    - Highlight both strengths and areas of concern
-    - Cite all sources used in your research
     """,
-    # tools=[google_search],  # Disabled for parallel execution compatibility
-    output_schema=ProductAnalysis,  # Changed to use output_schema as per ADK docs
+    output_schema=ProductAnalysis,
     output_key="product_analysis",
     after_agent_callback=[
         track_agent_execution_callback,
         collect_analysis_sources_callback
     ],
+)
+
+product_spy = LlmAgent(
+    model=config.specialist_model,
+    name="product_spy",
+    description="Searches for additional information about the startup's product and traction using Google search",
+    instruction=f"""
+    Current date: {datetime.datetime.now().strftime("%Y-%m-%d")}
+    Startup Information: {{startup_info}}
+    Files Analysis: {{files_analysis}}
+    {prompts.product_spy_prompt}
+    """,
+    tools=[google_search]
+)
+
+product_analyst = SequentialAgent(
+    name="product_analyst",
+    sub_agents=[
+        product_spy,
+        product_agent
+    ],
+    description="Analyzes product-market fit, traction metrics, and scalability potential. Runs the spy agent to gather additional product and traction information from internet and then runs the product agent to analyze the product-market fit, traction metrics, and scalability potential."
 )

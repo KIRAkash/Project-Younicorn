@@ -1,16 +1,13 @@
 import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
-  BarChart3,
   Building2,
   Home,
   Menu,
   Settings,
   Upload,
-  User,
   X,
   Bell,
-  Search,
   LogOut,
   Moon,
   Sun,
@@ -21,13 +18,13 @@ import { AuroraBackground } from '@/components/ui/aurora-background'
 import { useAuth } from '@/hooks/use-auth'
 import { useTheme } from '@/components/theme-provider'
 import { cn } from '@/utils'
+import { NotificationBell } from '@/components/notifications/notification-bell'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
 }
 
 const userNavigation = [
-  { name: 'Profile', href: '/profile', icon: User },
   { name: 'Settings', href: '/settings', icon: Settings },
 ]
 
@@ -35,7 +32,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
-  const { user, logout, isLoading } = useAuth()
+  const { user, signOut, loading } = useAuth()
   const { theme, setTheme } = useTheme()
 
   const isFounder = user?.role === 'founder'
@@ -48,13 +45,13 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const otherNav = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
     { name: 'Startups', href: '/startups', icon: Building2 },
-    { name: 'Analytics', href: '/analytics', icon: BarChart3 },
+    // { name: 'Analytics', href: '/analytics', icon: BarChart3 }, // Disabled for now
   ]
 
   const navigation = isFounder ? founderNav : otherNav
 
   useEffect(() => {
-    if (!isLoading && user) {
+    if (!loading && user) {
       if (isFounder && (location.pathname === '/dashboard' || location.pathname === '/analytics')) {
         navigate('/submit', { replace: true })
       }
@@ -62,12 +59,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         navigate('/dashboard', { replace: true })
       }
     }
-  }, [isLoading, user, isFounder, location.pathname, navigate])
+  }, [loading, user, isFounder, location.pathname, navigate])
 
 
   const handleLogout = async () => {
     try {
-      await logout()
+      await signOut()
       navigate('/auth/login')
     } catch (error) {
       console.error('Logout failed:', error)
@@ -108,11 +105,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         <div className="flex items-center gap-3 p-3 rounded-lg bg-white/10 dark:bg-white/5">
           <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
             <span className="text-white text-base font-medium">
-              {user?.full_name?.charAt(0).toUpperCase() || 'U'}
+              {user?.displayName?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
             </span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-foreground truncate">{user?.full_name}</p>
+            <p className="text-sm font-semibold text-foreground truncate">{user?.displayName || user?.email}</p>
             <p className="text-xs text-muted-foreground capitalize">
               {user?.role}
             </p>
@@ -142,13 +139,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             )}
           </Button>
           
-          <Button 
-            variant="ghost" 
-            size="icon"
-            className="text-foreground hover:bg-white/20 dark:hover:bg-white/10"
-          >
-            <Bell className="w-4 h-4" />
-          </Button>
+          <NotificationBell />
         </div>
       </div>
 
@@ -246,41 +237,14 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           <div className="flex items-center justify-between px-4 py-3">
             <Button
               variant="ghost"
-              size="icon"
-              className="text-foreground hover:bg-white/20 dark:hover:bg-white/10"
+              size="sm"
+              className="lg:hidden"
               onClick={() => setSidebarOpen(true)}
             >
               <Menu className="w-5 h-5" />
             </Button>
-            
-            {!isFounder && (
-              <div className="flex items-center gap-2 bg-white/20 dark:bg-white/10 rounded-lg px-3 py-2 flex-1 mx-4 max-w-sm">
-                <Search className="w-4 h-4 text-muted-foreground" />
-                <input
-                  type="text"
-                  placeholder="Search startups, analyses..."
-                  className="bg-transparent border-0 outline-none flex-1 text-sm placeholder:text-muted-foreground text-foreground"
-                />
-              </div>
-            )}
           </div>
         </div>
-
-        {/* Desktop-only search bar */}
-        {!isFounder && (
-          <div className="hidden lg:block sticky top-0 z-40 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-white/20">
-            <div className="px-6 py-3">
-              <div className="flex items-center gap-2 bg-white/20 dark:bg-white/10 rounded-lg px-3 py-2 max-w-md">
-                <Search className="w-4 h-4 text-muted-foreground" />
-                <input
-                  type="text"
-                  placeholder="Search startups, analyses..."
-                  className="bg-transparent border-0 outline-none flex-1 text-sm placeholder:text-muted-foreground text-foreground"
-                />
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Page content */}
         <main className="flex-1">

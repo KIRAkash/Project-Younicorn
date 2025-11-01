@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Project Minerva - AI-Powered Startup Due Diligence Platform."""
+"""Project Younicorn - AI-Powered Startup Due Diligence Platform."""
 
 from fastapi import FastAPI
 
@@ -22,7 +22,7 @@ __version__ = "0.1.0"
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application."""
     app = FastAPI(
-        title="Project Minerva API",
+        title="Project Younicorn API",
         description="AI-Powered Startup Due Diligence Platform",
         version=__version__,
     )

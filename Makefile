@@ -38,10 +38,16 @@ clean:
 test-integration:
 	uv run python test_integration.py
 
-deploy-dev:
-	gcloud run deploy project-minerva-dev --source . --region us-central1
+deploy-backend:
+	@chmod +x deploy.sh
+	./deploy.sh backend
 
-deploy-prod:
-	gcloud run deploy project-minerva-prod --source . --region us-central1
+deploy-frontend:
+	@chmod +x deploy.sh
+	./deploy.sh frontend
 
-.PHONY: install dev dev-backend dev-frontend test test-integration test-coverage lint format clean deploy-dev deploy-prod
+deploy:
+	@chmod +x deploy.sh
+	./deploy.sh both
+
+.PHONY: install dev dev-backend dev-frontend test test-integration test-coverage lint format clean deploy deploy-backend deploy-frontend

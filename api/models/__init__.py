@@ -1,4 +1,4 @@
-"""Data models for Project Minerva API."""
+"""Data models for Project Younicorn API."""
 
 from .requests import LoginRequest, StartupSubmissionRequest, UserRegistrationRequest
 from .responses import (

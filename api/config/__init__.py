@@ -1,4 +1,4 @@
-"""Configuration module for Project Minerva API."""
+"""Configuration module for Project Younicorn API."""
 
 from .settings import settings
 

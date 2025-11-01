@@ -1,4 +1,4 @@
-"""BigQuery client and operations for Project Minerva API."""
+"""BigQuery client and operations for Project Younicorn API."""
 
 import logging
 from typing import Dict, Any, List, Optional
@@ -8,7 +8,7 @@ from ..config import settings
 logger = logging.getLogger(__name__)
 
 class BigQueryClient:
-    """BigQuery client wrapper for Project Minerva operations."""
+    """BigQuery client wrapper for Project Younicorn operations."""
     
     def __init__(self):
         self.client = None
@@ -47,7 +47,12 @@ class BigQueryClient:
                 # Check if new columns exist
                 new_columns = {
                     'team_analysis', 'market_analysis', 'product_analysis', 
-                    'competition_analysis', 'synthesis_analysis'
+                    'competition_analysis', 'synthesis_analysis', 'is_latest'
+                }
+                
+                # Legacy columns to remove (they're now part of the structured analysis)
+                legacy_columns_to_remove = {
+                    'agent_analyses', 'risks_opportunities', 'key_insights'
                 }
                 
                 missing_columns = new_columns - current_fields
@@ -70,6 +75,11 @@ class BigQueryClient:
                             if col in missing_columns:
                                 new_schema.insert(insert_index, bigquery.SchemaField(col, "JSON", mode="NULLABLE"))
                                 insert_index += 1
+                        
+                        # Add is_latest column if missing
+                        if 'is_latest' in missing_columns:
+                            new_schema.insert(insert_index, bigquery.SchemaField("is_latest", "BOOLEAN", mode="NULLABLE", default_value_expression="true"))
+                            insert_index += 1
                     
                     # Update table schema
                     table.schema = new_schema
@@ -112,8 +122,17 @@ class BigQueryClient:
             raise RuntimeError("BigQuery client not available")
         
         try:
+            import json
             table_id = f"{self.project_id}.{self.dataset_id}.{table_name}"
             table = self.client.get_table(table_id)
+            
+            # Get JSON field names from schema
+            json_fields = set()
+            for field in table.schema:
+                if field.field_type == "JSON":
+                    json_fields.add(field.name)
+            
+            logger.info(f"JSON fields in {table_name}: {json_fields}")
             
             # Process rows for BigQuery compatibility
             processed_rows = []
@@ -122,9 +141,13 @@ class BigQueryClient:
                 for key, value in row.items():
                     if value is None:
                         processed_row[key] = None
-                    elif isinstance(value, (dict, list)):
+                    elif key in json_fields and isinstance(value, (dict, list)):
                         # Convert dict/list to JSON string for BigQuery JSON fields
-                        processed_row[key] = value  # BigQuery handles JSON natively
+                        processed_row[key] = json.dumps(value)
+                        logger.debug(f"Serialized {key} to JSON string")
+                    elif isinstance(value, (dict, list)):
+                        # For non-JSON fields, keep as-is (for RECORD types)
+                        processed_row[key] = value
                     else:
                         processed_row[key] = value
                 processed_rows.append(processed_row)
@@ -142,6 +165,91 @@ class BigQueryClient:
             else:
                 logger.error(f"BigQuery insert error: {e}")
                 raise
+    
+    def get_latest_analysis(self, startup_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Get the latest analysis for a startup.
+        
+        Args:
+            startup_id: Startup identifier
+            
+        Returns:
+            Analysis data dictionary or None if not found
+        """
+        if not self.is_available:
+            logger.warning("BigQuery client not available")
+            return None
+        
+        try:
+            import json
+            
+            query = f"""
+            SELECT 
+                a.id,
+                a.startup_id,
+                a.overall_score,
+                a.team_score,
+                a.market_score,
+                a.product_score,
+                a.competition_score,
+                a.investment_recommendation,
+                a.confidence_level,
+                a.investment_memo,
+                a.executive_summary,
+                a.team_analysis,
+                a.market_analysis,
+                a.product_analysis,
+                a.competition_analysis,
+                a.synthesis_analysis,
+                a.started_at,
+                a.completed_at,
+                s.company_name
+            FROM `{self.project_id}.{self.dataset_id}.analyses` a
+            LEFT JOIN `{self.project_id}.{self.dataset_id}.startups` s ON a.startup_id = s.id
+            WHERE a.startup_id = @startup_id AND a.is_latest = true
+            ORDER BY a.started_at DESC
+            LIMIT 1
+            """
+            
+            from google.cloud import bigquery
+            job_config = bigquery.QueryJobConfig(
+                query_parameters=[
+                    bigquery.ScalarQueryParameter("startup_id", "STRING", startup_id)
+                ]
+            )
+            
+            query_job = self.client.query(query, job_config=job_config)
+            results = list(query_job.result())
+            
+            if not results:
+                logger.info(f"No analysis found for startup {startup_id}")
+                return None
+            
+            row = results[0]
+            
+            # Convert row to dictionary
+            analysis = dict(row)
+            
+            # Parse JSON fields
+            json_fields = [
+                'team_analysis', 'market_analysis', 'product_analysis',
+                'competition_analysis', 'synthesis_analysis'
+            ]
+            
+            for field in json_fields:
+                if field in analysis and analysis[field]:
+                    if isinstance(analysis[field], str):
+                        try:
+                            analysis[field] = json.loads(analysis[field])
+                        except json.JSONDecodeError:
+                            logger.warning(f"Could not parse {field} as JSON")
+            
+            logger.info(f"Retrieved latest analysis for startup {startup_id}")
+            return analysis
+            
+        except Exception as e:
+            logger.error(f"Error getting latest analysis for {startup_id}: {e}")
+            return None
 
 # Global BigQuery client instance
 bq_client = BigQueryClient() if settings.google_cloud_project else None
