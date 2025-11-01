@@ -1,14 +1,15 @@
 [project]
-name = "project-minerva"
+name = "project-Younicorn"
 version = "0.1.0"
 description = "AI-Powered Startup Due Diligence Platform"
 authors = [
-    {name = "Project Minerva Team", email = "team@projectminerva.ai"},
+    {name = "Project Younicorn Team", email = "team@projectYounicorn.ai"},
 ]
 dependencies = [
     "google-adk>=1.8.0",
     "google-cloud-bigquery>=3.13.0",
     "google-cloud-storage>=2.10.0",
+    "google-cloud-firestore>=2.14.0",
     "fastapi>=0.104.0",
     "uvicorn>=0.24.0",
     "pydantic>=2.5.0",
@@ -20,6 +21,13 @@ dependencies = [
     "numpy>=1.24.0",
     "python-dotenv>=1.0.0",
     "email-validator>=2.0.0",
+    "google-cloud-speech>=2.12.0",
+    "google-cloud-storage>=2.10.0",
+    "PyPDF2>=3.0.1",
+    "python-docx>=0.8.11",
+    "python-pptx>=0.6.22",
+    "firebase-admin>=6.2.0",
+    "flask-cors>=4.0.0",
 ]
 
 requires-python = ">=3.10,<3.13"
@@ -92,7 +100,7 @@ disable_error_code = ["misc", "no-untyped-call", "no-any-return"]
 exclude = [".venv"]
 
 [tool.codespell]
-ignore-words-list = "rouge,minerva"
+ignore-words-list = "rouge,Younicorn"
 skip = "./locust_env/*,uv.lock,.venv,./frontend,**/*.ipynb"
 
 [build-system]
